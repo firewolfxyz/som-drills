@@ -30,18 +30,28 @@ row header and column header. The student writes the answer into the cell.
 - **Row headers:** generated from **one random starting number** by the digit
   walk below. Not random per row.
 
-### Row-number formula (3-digit rows)
+### Row-number formula
 
 Positions are counted from the **left**; the leftmost digit is the first digit.
+Steps **alternate from +3, starting at the leftmost digit**: even positions get
+`+3`, odd positions get `−3`. Every step wraps mod 10 and is applied to the
+*previous* row's digits, so row *k+1* = walk(row *k*), seeded by one random start.
 
-| position | step | notes |
-|---|---|---|
-| first (leftmost) | **+3** | result must never be 0; if it lands on 0, substitute **3** |
-| second | **−3** | 0 allowed |
-| last (third) | **+3** | 0 allowed |
+| digits | steps (left → right) |
+|---|---|
+| 1 | `+3` |
+| 2 | `+3 −3` |
+| 3 | `+3 −3 +3` |
 
-Each step is mod 10 (wrap past 9), applied to the *previous row's* digits. So
-row *k+1* = walk(row *k*), seeded by one random start.
+**Leading-digit rule:** the leftmost digit must never be 0; when a step lands it
+on 0, substitute **3**. Other positions may be 0.
+
+Verified (computed over every start of each length):
+- **No duplicate rows** within 8-row or 10-row grids for 2-, 3- and 4-digit rows.
+- **1-digit rows have period 9**, so a 10-row grid would repeat its first row;
+  1-digit-row drills are capped at 9 rows (or the grid must be 8 rows).
+- The leading-digit rule fires often (~1 in 9 steps), so it belongs in the
+  formula's main path, not a post-hoc fix.
 
 Verified properties (computed, all 900 three-digit starts):
 - **No duplicate rows** within an 8-row or 10-row grid — every grid is distinct.
@@ -52,16 +62,26 @@ Verified properties (computed, all 900 three-digit starts):
 
 Sample grids (start → next 7):
 ```
-123 → 496 769 332 605 978 241 514     (row 4: 7+3=10→0→3, so 332)
-456 → 729 392 665 938 201 574 847
-999 → 262 535 808 171 444 717 380
+1-digit 7   → 3 6 9 2 5 8 1
+2-digit 12  → 49 76 33 60 97 24 51
+3-digit 123 → 496 769 332 605 978 241 514   (row 4: 7+3=10→0→3, so 332)
+3-digit 999 → 262 535 808 171 444 717 380
 ```
+
+### Signs
+
+- **Column headers are never negative.**
+- **Row headers may be negative**; the sign is chosen randomly per row, and the
+  drill *type* identifies whether a drill uses signed rows (so it is known before
+  the grid appears, not discovered).
+- Open question: does the digit walk run on the magnitude with signs assigned
+  independently per row, or does the walk itself carry the sign?
 
 ### Division answers: quotient + remainder
 
-Cells in a division drill hold `qrN`, e.g. `17 ÷ 5` → `3r2`. Consequences to
-settle (see Blockers): notation when the remainder is 0, and how a student
-enters `r` on the answer device.
+Cells in a division drill hold `qrN`, e.g. `17 ÷ 5` → `3r2`. **When the remainder
+is 0, only the quotient is written** — `62`, never `62r0`. So entry length varies
+per cell (see input design).
 
 ### Example: `3 x 1 multiplication`, 8 rows × 5 columns, 5 min
 
@@ -94,15 +114,16 @@ that is where the fluency comes from.
    ...
 ```
 
-(`62` above would be written `62r0` or `62` — notation for zero remainder is an
-open question.)
+Note `123 ÷ 8 = 15r3` but `496 ÷ 8 = 62` — a zero remainder is written as the
+quotient alone.
 
 ## Decided
 
 - All tiers from the start; generators are tier-parameterized, not per-grade copies.
 - Generated only — no past-paper import. Generation follows the scheme above.
-- Answer entry happens **in the cell** of the drill grid. Nothing in the UI may
-  assume a single-question input.
+- Answer entry happens **in the cell** of the drill grid, on a **keyboard**,
+  optimized for speed (see *Answer entry*). Nothing in the UI may assume a
+  single-question input.
 - No persistence now (in-memory session only). Keep a seam so history/backend
   can be added without touching the grid or generator code.
 - Many small files, one component per file, deliberately — new behaviour means
@@ -116,17 +137,42 @@ open question.)
 
 ## Blockers (operator will supply)
 
-1. **Formula generalization.** The rule as given covers exactly 3 digits
-   (+3 / −3 / +3 from the left). What are the steps for `2 x 1` (2-digit rows),
-   `4 x 2`, or any other digit count? Blocks generation for every drill except
-   3-digit-row ones.
-2. **Division constraints.** Must columns be chosen so quotients stay in some
-   range, and is a negative quotient allowed in subtraction/division drills?
-   ("Negatives occur at higher tiers" — unclear whether *headers* go negative
-   or only *answers*.)
-3. **Zero remainder notation** — `62` or `62r0`?
-4. **Answer entry device.** Keyboard/numpad, on-screen keypad, or handwriting?
-   Needed for the grid's input layer, especially `r` in `4r2` and negative signs.
+1. **Which drill types exist.** The catalogue of names — digit counts for rows
+   and columns per operator, and which ones use signed rows. Needed to size the
+   generator registry and the picker.
+2. **Signed-row mechanics.** Is the sign independent of the digit walk, and what
+   does a negative row do to a division cell's remainder (e.g. `−123 ÷ 7`)?
+3. **Column-header ranges per drill type.** "Random with the right number of
+   digits" allows `9 × 9` or `10 × 1`; are there lower bounds so a column is
+   never trivially small, and any exclusion of 0/1 as operands?
+4. **Answer echo** — visible while typing, or blind like paper?
+
+## Answer entry: keyboard, optimized for speed
+
+Design constraints, to be settled before Phase 1's input layer.
+
+The grid's work order is fixed — down a column, then the next column to the
+right — and the student may not skip. That makes the good default obvious:
+**typing an answer commits it and advances down; committing the last cell of a
+column advances to the top of the next column.** No arrow keys needed for
+forward progress, so the hand never leaves the typing position.
+
+Proposals to evaluate:
+- **Numpad-first layout**, digits large and hit-target friendly; usable from
+  either the main-row numbers or the numpad without reaching.
+- **Auto-advance on commit** (Enter/Space) rather than on digit-count, since
+  answer lengths vary (`41` vs `3472` vs `3r2`) — counting digits cannot know
+  when an answer is finished.
+- **A single key for the `r` separator** in quotient+remainder, placed where the
+  hand already rests; possibly the same key as commit-with-separator.
+- **Minus sign** needed only in signed drills (negative rows) — so it can be a
+  mode-aware key rather than always competing for space.
+- **Backspace/Left** to step back one cell for correction without breaking the
+  no-skip rule; corrections never create blanks ahead.
+- **Live cell highlighting** of the active cell so eyes stay on the grid, and no
+  mouse required at any point.
+- Consider whether answers are typed **blind** (no echo) to mimic paper, or
+  echoed. Echo is friendlier; blind is closer to contest conditions.
 
 ## Phases (each independently verifiable)
 
