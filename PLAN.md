@@ -25,8 +25,8 @@ row header and column header. The student writes the answer into the cell.
   tiers. Cell answers are integers. Division answers are **quotient +
   remainder**, written `4r2`.
 - **No worked example cells** are shown before starting.
-- **Column headers:** random, subject only to having the correct digit count for
-  the drill (e.g. 1 column header per column, each a single digit in `n × 1`).
+- **Column headers:** random, with **exactly** the digit count the config
+  specifies — never negative.
 - **Row headers:** generated from **one random starting number** by the digit
   walk below. Not random per row.
 
@@ -48,8 +48,9 @@ on 0, substitute **3**. Other positions may be 0.
 
 Verified (computed over every start of each length):
 - **No duplicate rows** within 8-row or 10-row grids for 2-, 3- and 4-digit rows.
-- **1-digit rows have period 9**, so a 10-row grid would repeat its first row;
-  1-digit-row drills are capped at 9 rows (or the grid must be 8 rows).
+- **1-digit rows have period 9**, so a 10-row grid would repeat its first row.
+  Confirmed by operator: **the 80-cell grid never has 1-digit rows.** The config
+  loader should reject that combination rather than silently truncating.
 - The leading-digit rule fires often (~1 in 9 steps), so it belongs in the
   formula's main path, not a post-hoc fix.
 
@@ -74,14 +75,16 @@ Sample grids (start → next 7):
 - **Row headers may be negative**; the sign is chosen randomly per row, and the
   drill *type* identifies whether a drill uses signed rows (so it is known before
   the grid appears, not discovered).
-- Open question: does the digit walk run on the magnitude with signs assigned
-  independently per row, or does the walk itself carry the sign?
+- The digit walk runs on the **magnitude**; signs are assigned independently per
+  row. So `123 → 496 → …` may surface as `123, −496, 769, …`.
+- **No division with negatives.** Division drills have unsigned rows; a config
+  combining division and signed rows is invalid.
 
 ### Division answers: quotient + remainder
 
 Cells in a division drill hold `qrN`, e.g. `17 ÷ 5` → `3r2`. **When the remainder
 is 0, only the quotient is written** — `62`, never `62r0`. So entry length varies
-per cell (see input design).
+per cell (see input design). Division rows are always positive.
 
 ### Example: `3 x 1 multiplication`, 8 rows × 5 columns, 5 min
 
@@ -135,17 +138,15 @@ quotient alone.
 - **Fraction drills** — skipped for now by operator decision. Revisit later:
   what fraction headers look like, what a cell contains, how one is entered.
 
-## Blockers (operator will supply)
+## Still open (non-blocking)
 
-1. **Which drill types exist.** The catalogue of names — digit counts for rows
-   and columns per operator, and which ones use signed rows. Needed to size the
-   generator registry and the picker.
-2. **Signed-row mechanics.** Is the sign independent of the digit walk, and what
-   does a negative row do to a division cell's remainder (e.g. `−123 ÷ 7`)?
-3. **Column-header ranges per drill type.** "Random with the right number of
-   digits" allows `9 × 9` or `10 × 1`; are there lower bounds so a column is
-   never trivially small, and any exclusion of 0/1 as operands?
-4. **Answer echo** — visible while typing, or blind like paper?
+1. **Actual catalogue entries** — the concrete list of drills to ship first. Can
+   be authored incrementally; Phase 2 only needs one valid entry to test against.
+2. **Key layout specifics** for entry (which physical keys for commit / `r` /
+   minus / back). Decide during Phase 1 with the grid on screen rather than in
+   the abstract.
+3. **Tier semantics.** Whether tier is a property of a config entry or just a
+   label used to filter the picker.
 
 ## Answer entry: keyboard, optimized for speed
 
@@ -171,8 +172,43 @@ Proposals to evaluate:
   no-skip rule; corrections never create blanks ahead.
 - **Live cell highlighting** of the active cell so eyes stay on the grid, and no
   mouse required at any point.
-- Consider whether answers are typed **blind** (no echo) to mimic paper, or
-  echoed. Echo is friendlier; blind is closer to contest conditions.
+- **Echo while typing, but no checking until the end.** The student sees what
+  they typed; nothing marks right/wrong mid-drill. Correctness is revealed only
+  after submit or time-up.
+
+## Drill catalogue = configuration
+
+The catalogue is **data, not code**. One config entry per drill defines: name,
+operator, grid size, row digit count, column digit count, whether signed rows are
+allowed, and time limit. Adding a drill means adding an entry — no new modules.
+
+Proposed shape (JSON, one file per tier or one file with all):
+
+```json
+{
+  "name": "3 x 1 multiplication",
+  "operator": "multiply",
+  "rows":    { "count": 8,  "digits": 3, "signed": false },
+  "columns": { "count": 5,  "digits": 1 },
+  "seconds": 300,
+  "answer":  "integer"
+}
+```
+
+`answer` is `integer` or `quotientRemainder`. Sizes pair with time: 8×5 → 300 s,
+10×8 → 600 s (both 7.5 s/cell).
+
+**Validation rules the loader must enforce** (fail loudly at load, not at play):
+- `rows.digits ≥ 2` when `rows.count === 10` (1-digit rows cycle at 9).
+- `operator !== "divide"` when `rows.signed` is true.
+- `answer === "quotientRemainder"` only for division; integer otherwise.
+- `rows.count * columns.count` must match the declared time limit's pace
+  (40/300 or 80/600).
+- Column headers generated with exactly `columns.digits` digits, never negative;
+  row magnitudes with exactly `rows.digits` digits.
+
+Consequence for code: generators take a validated config and emit a grid spec.
+The registry maps `operator → generator`; nothing else branches on drill identity.
 
 ## Phases (each independently verifiable)
 
@@ -181,15 +217,17 @@ Static page, no build step. Render a drill grid from a hardcoded spec: headers,
 empty cells, one cell focused, typed digits land in the focused cell, clock
 counting down, cell counter. Stub generator only.
 
-### Phase 2 — Grid generation (waiting on blockers 1–4)
-Produce a **grid spec**, not questions:
-`{ name, operator, rows[], cols[], answers[][], tier }`. Column sets loaded from
-data; row sequences from the formula. One module per operator/family.
+### Phase 2 — Grid generation
+Load and validate config; produce a **grid spec**, not questions:
+`{ name, operator, rows[], cols[], answers[][], answerFormat }`. Column headers
+from random-with-fixed-digits; row magnitudes from the walk, signs assigned per
+row when `signed`. One module per operator.
 
-### Phase 3 — Drill rules enforcement
+### Phase 3 — Drill rules enforcement and reveal
 Column-major fill order enforced (no cell selectable until its column's cells
-above it are filled), no skipping, per-cell correctness on submit, timer hard
-stop at 5:00 / 10:00, score = correct cells with time remaining recorded.
+above it are filled), no skipping, timer hard stop at 5:00 / 10:00. On submit or
+time-up: grade every cell against the spec in one pass, mark correct/incorrect,
+report score = correct cells plus time remaining. No feedback before that point.
 
 ### Phase 4 — Drill catalogue & modes
 Pick a drill by name (`3 x 1 multiplication`, `2 x 1 fractions`, …) and size;
