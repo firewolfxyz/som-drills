@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>pending</title>
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/hud.css" />
+  <link rel="stylesheet" href="../css/grid.css" />
+</head>
+<body>
+  <main id="app"></main>
+  <script src="../js/stubSpec.js"></script>
+  <script src="../js/rules.js"></script>
+  <script src="../js/keys.js"></script>
+  <script src="../js/ui/drillView.js"></script>
+  <script src="../js/ui/entryView.js"></script>
+  <script src="../js/ui/drillHud.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+  /* Real-browser check of entry through the wiring in js/main.js. Results land
+     in <title> so a headless --dump-dom run can read them. Not app code. */
+  (function () {
+    const results = [];
+    function press(code, char) {
+      const event = new KeyboardEvent("keydown", {
+        code: code, key: char, bubbles: true, cancelable: true
+      });
+      document.dispatchEvent(event);
+      return event.defaultPrevented;
+    }
+    const cells = () =>
+      Array.from(document.querySelectorAll(".cell.answer"));
+    const ordered = () => {
+      const rows = window.SOM.stubSpec.rows.length;
+      const byIndex = [];
+      cells().forEach(function (c) {
+        byIndex[Number(c.dataset.col) * rows + Number(c.dataset.row)] = c;
+      });
+      return byIndex;
+    };
+    const activeIndex = () => {
+      const arr = ordered();
+      for (let i = 0; i < arr.length; i += 1) {
+        if (arr[i].classList.contains("is-active")) return i;
+      }
+      return -1;
+    };
+
+    results.push(["cells", cells().length]);
+    results.push(["startActive", activeIndex()]);
+    results.push(["startProgress", document.querySelector(".hud-progress").textContent]);
+
+    press("Digit1", "1");
+    press("Digit9", "9");
+    results.push(["typed", ordered()[0].textContent]);
+    const spacePrevented = press("Space", " ");
+    results.push(["spacePrevented", spacePrevented]);
+    results.push(["afterCommitCursor", window.SOM.state.info().cursor]);
+    results.push(["afterCommitActive", activeIndex()]);
+    results.push(["progress", document.querySelector(".hud-progress").textContent]);
+
+    const emptyCommit = press("Space", " ");
+    results.push(["emptyCommitCursor", window.SOM.state.info().cursor]);
+    results.push(["letterAHandled", press("KeyA", "a")]);
+    results.push(["tabHandled", press("Tab", "Tab")]);
+
+    /* Cursor is now at 1 with nothing typed: Backspace must step back to 0 and
+       restore the saved text there for editing. */
+    const bsPrevented = press("Backspace", "Backspace");
+    results.push(["backspacePrevented", bsPrevented]);
+    results.push(["afterStepBackCursor", window.SOM.state.info().cursor]);
+    results.push(["afterStepBackActive", activeIndex()]);
+    results.push(["restoredText", ordered()[0].textContent]);
+    results.push(["progressAfterStepBack", document.querySelector(".hud-progress").textContent]);
+
+    press("Backspace", "Backspace");
+    results.push(["midCellRemove", ordered()[0].textContent]);
+    press("Backspace", "Backspace");
+    press("Backspace", "Backspace"); /* empty at index 0: must not go anywhere */
+    results.push(["backAtTrueStartCursor", window.SOM.state.info().cursor]);
+    results.push(["backAtTrueStartText", JSON.stringify(ordered()[0].textContent)]);
+
+    document.title = JSON.stringify(results);
+  })();
+  </script>
+</body>
+</html>

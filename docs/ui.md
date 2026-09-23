@@ -114,3 +114,13 @@ is the classic bug — it bunches over the first columns instead of spanning the
 
 Screenshots can be written headless but are not readable by the current model, so
 numbers are the source of truth for geometry.
+
+## Regression checks (in `tools/`, never loaded by index.html)
+
+| file | run | proves |
+|---|---|---|
+| `tools/simulateEntry.js` | `node tools/simulateEntry.js` | work order, empty-commit rule, backspace rules, 40-cell walk — under a DOM shim |
+| `tools/probeLayout.html` | headless `--dump-dom` (method above) | header widths equal answer widths; header/column offsets are 0 |
+| `tools/probeEntry.html` | headless `--dump-dom` | entry works through real wiring: Space/Backspace prevented, ignored keys untouched |
+
+One-off probes get deleted; only checks that still prove something stay in `tools/`.

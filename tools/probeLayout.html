@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>layout probe</title>
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/hud.css" />
+  <link rel="stylesheet" href="../css/grid.css" />
+</head>
+<body>
+  <main id="app"></main>
+  <script src="../js/stubSpec.js"></script>
+  <script src="../js/rules.js"></script>
+  <script src="../js/keys.js"></script>
+  <script src="../js/ui/drillView.js"></script>
+  <script src="../js/ui/entryView.js"></script>
+  <script src="../js/ui/drillHud.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+  /* Geometry check (see docs/ui.md): header cells must match answer cells in
+     width and left edge. Results go into <title> for a headless --dump-dom run. */
+  /* Runs synchronously: styles are applied and the grid exists by now. */
+  (function () {
+    try {
+    const rows = Array.from(document.querySelectorAll(".drill-row"));
+    const dataRow = rows[1];
+    /* Compare every cell in the header row with the cell below it: same width
+       and same left edge means headers sit over their own columns. */
+    const headerCells = Array.from(rows[0].querySelectorAll(".cell"));
+    const answerCells = Array.from(dataRow.querySelectorAll(".cell"));
+    const out = {
+      viewport: [window.innerWidth, window.innerHeight],
+      gridTopPx: document.querySelector(".drill-grid").getBoundingClientRect().top,
+      headerWidths: headerCells.map((c) => Math.round(c.getBoundingClientRect().width)),
+      answerWidths: answerCells.map((c) => Math.round(c.getBoundingClientRect().width)),
+      headerLeftOffsets: headerCells.map(function (h, i) {
+        return Math.round(h.getBoundingClientRect().left - answerCells[i].getBoundingClientRect().left);
+      }),
+      activeOutline: (function () {
+        const active = document.querySelector(".is-active");
+        return active ? window.getComputedStyle(active).outlineWidth : "no-active-cell";
+      })()
+    };
+      document.title = JSON.stringify(out);
+    } catch (e) {
+      document.title = "probe error: " + e.message;
+    }
+  })();
+  </script>
+</body>
+</html>
