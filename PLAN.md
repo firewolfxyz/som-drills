@@ -76,7 +76,7 @@ Sample grids (start → next 7):
   drill *type* identifies whether a drill uses signed rows (so it is known before
   the grid appears, not discovered).
 - The digit walk runs on the **magnitude**; signs are assigned independently per
-  row. So `123 → 496 → …` may surface as `123, −496, 769, …`.
+  row (confirmed). So `123 → 496 → …` may surface as `123, −496, 769, …`.
 - **No division with negatives.** Division drills have unsigned rows; a config
   combining division and signed rows is invalid.
 
@@ -148,9 +148,47 @@ quotient alone.
 3. **Tier semantics.** Whether tier is a property of a config entry or just a
    label used to filter the picker.
 
+## First drill: `2 x 1 addition`
+
+The build targets this one drill first; everything else is later config.
+
+```json
+{
+  "name": "2 x 1 addition",
+  "operator": "add",
+  "rows":    { "count": 8, "digits": 2, "signed": false },
+  "columns": { "count": 5, "digits": 1 },
+  "seconds": 300,
+  "answer":  "integer"
+}
+```
+
+Sample grid — rows from the walk seeded at 12, columns random single digits:
+
+```
+            │   7    5    9    4    6
+────────────┼──────────────────────────
+      12    │  19   17   21   16   18
+      49    │  56   54   58   53   55
+      76    │  83   81   85   80   82
+      33    │  40   38   42   37   39
+      60    │  67   65   69   64   66
+      97    │ 104  102  106  101  103
+      24    │  31   29   33   28   30
+      51    │  58   56   60   55   57
+```
+
+Answer widths vary (2–3 digits: `19` vs `104`) even in this simplest drill —
+which is why commit cannot be inferred from digit count. 2-digit rows are valid
+for both the 40-cell and the 80-cell grid (no cycling).
+
 ## Answer entry: keyboard, optimized for speed
 
 Design constraints, to be settled before Phase 1's input layer.
+
+Confirmed direction: **plain keyboard entry with fast advancement**; the exact
+commit key is decided later (space bar is the current candidate). Below is option
+analysis, not a decision.
 
 The grid's work order is fixed — down a column, then the next column to the
 right — and the student may not skip. That makes the good default obvious:
@@ -206,6 +244,10 @@ Proposed shape (JSON, one file per tier or one file with all):
   (40/300 or 80/600).
 - Column headers generated with exactly `columns.digits` digits, never negative;
   row magnitudes with exactly `rows.digits` digits.
+
+**The picker is generated from the configs.** No hand-maintained menu: the list of
+drills shown to a student *is* the validated config set, so adding a drill makes it
+appear in the picker with no other change.
 
 Consequence for code: generators take a validated config and emit a grid spec.
 The registry maps `operator → generator`; nothing else branches on drill identity.
