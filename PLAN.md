@@ -254,10 +254,20 @@ The registry maps `operator → generator`; nothing else branches on drill ident
 
 ## Phases (each independently verifiable)
 
-### Phase 1 — Skeleton
+### Phase 1 — Skeleton (`2 x 1 addition` only)
 Static page, no build step. Render a drill grid from a hardcoded spec: headers,
 empty cells, one cell focused, typed digits land in the focused cell, clock
 counting down, cell counter. Stub generator only.
+
+Acceptance checks for Phase 1:
+- Page loads by opening `index.html` directly (no server, no bundler).
+- Grid renders 8 rows × 5 columns with row/column headers and no extra cells.
+- Typing digits fills the active cell; commit advances down one cell; committing
+  the last cell of a column lands on the top of the next column.
+- Backspace steps back to the previous cell and clears it; no blanks can exist
+  ahead of the cursor.
+- Timer counts down from 5:00 and stops the drill at zero.
+- Nothing displays correctness before submit.
 
 ### Phase 2 — Grid generation
 Load and validate config; produce a **grid spec**, not questions:
