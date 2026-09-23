@@ -95,3 +95,22 @@ js/generators/*     config validation + grid spec generation (Phase 2)
 
 Rule: a UI file may not compute drill correctness, and `rules.js` may not touch
 the DOM.
+
+## Layout verification (no eyeballing required)
+
+Layout is measured in a real browser rather than guessed from CSS. Method:
+
+1. Temporarily copy `index.html` to a probe file next to it, appending a script that
+   writes geometry as JSON into `<title>`: widths and left edges of
+   `.cell.header`, `.cell.answer`, `.cell.rowhead`, plus per-column header-vs-answer
+   left-edge offsets.
+2. Render headless: `msedge --headless=new --disable-gpu --window-size=1200,900
+   --virtual-time-budget=2000 --dump-dom file:///<project>/probe.html` and read the title.
+3. Delete the probe file; never commit it.
+
+Pass criteria: every header width equals the answer-cell width, and each header's
+left edge equals its column's left edge (offset 0). A header sized to its own text
+is the classic bug — it bunches over the first columns instead of spanning them.
+
+Screenshots can be written headless but are not readable by the current model, so
+numbers are the source of truth for geometry.
