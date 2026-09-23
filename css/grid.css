@@ -2,10 +2,6 @@
    one cell per column, so columns line up without CSS knowing the column count.
    Layout only — no behaviour lives here. */
 
-.drill-grid {
-  border-collapse: collapse;
-}
-
 .drill-row {
   display: flex;
 }
