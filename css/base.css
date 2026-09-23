@@ -1,0 +1,35 @@
+/* Reset and base type. Digits are tabular monospace so column widths stay
+   stable as answers of different lengths are typed. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f7f6f2;
+  color: #1a1a1a;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.4;
+}
+
+#app {
+  margin: 0 auto;
+  padding: 1.5rem;
+  max-width: 60rem;
+}
+
+/* Grid digits: monospaced and tabular everywhere numbers are shown. */
+.hud,
+.drill-grid,
+.drill-grid .num {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}

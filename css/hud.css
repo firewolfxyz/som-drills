@@ -1,0 +1,25 @@
+/* HUD: drill name, clock, progress counter. Sits above the grid. */
+
+.hud {
+  align-items: baseline;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.hud-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.hud-clock {
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+.hud-progress {
+  color: #555;
+  font-size: 1.125rem;
+}

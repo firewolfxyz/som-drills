@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Spirit of Math Drills</title>
+  <!-- Scripts are loaded as classic scripts in dependency order, not ES modules:
+       browsers block module loading over file:// and this app must run by
+       double-clicking index.html with no server and no build step. -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/hud.css">
+  <link rel="stylesheet" href="css/grid.css">
+</head>
+<body>
+  <!-- Single root container; every view renders inside it. -->
+  <main id="app"></main>
+
+  <script src="js/stubSpec.js"></script>
+  <script src="js/ui/drillView.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
