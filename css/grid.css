@@ -1,29 +1,9 @@
-/* The drill grid. Rows are flex rows; every row has one row-header cell plus
-   one cell per column, so columns line up without CSS knowing the column count.
-   Layout only — no behaviour lives here. */
+/* The drill grid. Each row is a flex row: one fixed-width row-header cell plus
+   one flexible cell per column, so columns line up without CSS knowing the
+   column count. Layout only — no behaviour lives here. */
 
 .drill-row {
   display: flex;
-}
-
-/* Left row-header column: fixed width, separated from the answer cells. */
-.cell.rowhead {
-  border-right: 2px solid #1a1a1a;
-  flex: 0 0 5rem;
-  justify-content: flex-end;
-}
-
-/* Corner cell above the row headers, over the separator line. */
-.cell.corner {
-  border-bottom: 2px solid #1a1a1a;
-  border-right: 2px solid #1a1a1a;
-  flex: 0 0 5rem;
-}
-
-.cell.header {
-  border-bottom: 2px solid #1a1a1a;
-  color: #333;
-  font-weight: 600;
 }
 
 .cell {
@@ -33,13 +13,41 @@
   padding: 0.5rem 0.75rem;
 }
 
-/* Answer cells: equal width, generous for large digits. */
+/* Corner above the row headers: same fixed width, so header cells start at the
+   same x as the answer cells below them. */
+.cell.corner {
+  border-bottom: 2px solid #1a1a1a;
+  border-right: 2px solid #1a1a1a;
+  flex: 0 0 5rem;
+}
+
+/* Left row-header column, right-aligned next to the separator. */
+.cell.rowhead {
+  border-right: 2px solid #1a1a1a;
+  flex: 0 0 5rem;
+}
+
+/* Column headers and answer cells share their sizing so each header spans its
+   own column exactly. */
+.cell.header,
+.cell.answer {
+  flex: 1 1 0;
+  margin: 2px;
+  min-width: 0;
+}
+
+.cell.header {
+  border-bottom: 2px solid #1a1a1a;
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  justify-content: center;
+}
+
 .cell.answer {
   background: #fff;
   border: 1px solid #bbb;
-  flex: 1 1 0;
   font-size: 1.5rem;
-  margin: 2px;
   min-height: 3rem;
 }
 
