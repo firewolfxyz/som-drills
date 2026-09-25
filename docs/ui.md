@@ -112,8 +112,13 @@ Pass criteria: every header width equals the answer-cell width, and each header'
 left edge equals its column's left edge (offset 0). A header sized to its own text
 is the classic bug — it bunches over the first columns instead of spanning them.
 
-Screenshots can be written headless but are not readable by the current model, so
-numbers are the source of truth for geometry.
+Headless screenshots **are** readable (`--screenshot=<path>` then view the PNG):
+`msedge --headless=new --disable-gpu --window-size=1200,900
+--virtual-time-budget=3000 --screenshot=<out>.png file:///<project>/index.html`.
+The screenshot is a visual check of the whole page; the probe numbers remain the
+precise source of truth for geometry. Verified 2025-09-24: grid renders with
+headers spanning their columns, active cell highlighted, HUD showing name,
+clock, and progress.
 
 ## Regression checks (in `tools/`, never loaded by index.html)
 
