@@ -122,6 +122,7 @@ const activeIndex = () => {
   return active === undefined ? -1 : orderedCells().indexOf(active);
 };
 const progressText = () => appRoot.querySelector(".hud-progress")._text;
+const clockText = () => appRoot.querySelector(".hud-clock")._text;
 const texts = () => orderedCells().map((c) => c._text);
 
 /* ---------- assertions ---------- */
@@ -205,13 +206,60 @@ check("after full: filled", state.info().filled, 40);
 check("after full: last cell text unchanged", texts()[39], lastBefore);
 check("after full: highlight unchanged", activeIndex(), activeBefore);
 
+console.log("\n-- clock: wired timer ticks down every second --");
+const clock = sandbox.SOM.clock;
+check("clock starts from the spec's seconds", clockText(), "5:00");
+clock.tick(); /* the shim has no setInterval; tick() stands in for one second */
+check("one tick shows 4:59", clockText(), "4:59");
+
+console.log("\n-- time-up stops entry --");
+/* Tick the wired clock to exactly zero; no real waiting (no setInterval here).
+   Runs before the rerender below so main.js's own hud writes hit live nodes. */
+while (clock.secondsLeft() > 1) clock.tick();
+check("one tick before zero", clockText(), "0:01");
+const filledAtExpiry = state.info().filled;
+clock.tick(); /* reaches zero: onExpire stops state, clock shows 0:00 */
+check("clock at zero", clockText(), "0:00");
+check("timer stopped itself", clock.isRunning(), false);
+check("done flag set by time-up", state.info().done, true);
+const textsAtExpiry = texts();
+key("9");
+commit();
+backspace();
+check("keys after expiry change no text", texts(), textsAtExpiry);
+check("keys after expiry fill nothing", state.info().filled, filledAtExpiry);
+check("handle refuses after expiry", state.handle("digit", "1"), false);
+
+console.log("\n-- timer unit checks (injectable, no waiting) --");
+const ticks = [];
+let expired = 0;
+const t = sandbox.SOM.timer.createTimer({
+  seconds: 2,
+  onTick: function (left) { ticks.push(left); },
+  onExpire: function () { expired += 1; }
+});
+t.tick(); /* never started: must not tick */
+check("unstarted timer does not tick", ticks, []);
+t.start();
+t.tick();
+t.tick();
+check("ticks report seconds remaining", ticks, [1, 0]);
+check("expired exactly at zero, once", expired, 1);
+t.tick();
+check("no ticks after expiry", ticks, [1, 0]);
+t.start();
+check("expired timer will not restart", t.isRunning(), false);
+
 console.log("\n-- backspace: mid-cell removes one char --");
 /* Restart the drill for a clean backspace test. */
 sandbox.SOM.drillView.render(appRoot, sandbox.SOM.stubSpec);
 sandbox.SOM.entryView.setup(appRoot.querySelector(".drill-grid"));
 sandbox.SOM.state.start(sandbox.SOM.stubSpec, {
   view: sandbox.SOM.entryView,
-  hud: sandbox.SOM.drillHud.setup(appRoot.querySelector(".hud-progress"))
+  hud: sandbox.SOM.drillHud.setup(
+    appRoot.querySelector(".hud-progress"),
+    appRoot.querySelector(".hud-clock")
+  )
 });
 ["1", "2", "3"].forEach(key);
 check("three digits typed", texts()[0], "123");

@@ -9,11 +9,26 @@ window.SOM = window.SOM || {};
     window.SOM.stubSpec
   );
   window.SOM.entryView.setup(rendered.grid);
-  const hud = window.SOM.drillHud.setup(rendered.progress);
+  const hud = window.SOM.drillHud.setup(rendered.progress, rendered.clock);
+  hud.setClock(window.SOM.stubSpec.seconds);
   window.SOM.state.start(window.SOM.stubSpec, {
     view: window.SOM.entryView,
     hud: hud
   });
+
+  /* Countdown from the spec's seconds; at zero entry stops so no key can act
+     on anything any more (docs/ui.md "Timing"). Exposed for tools/ checks. */
+  window.SOM.clock = window.SOM.timer.createTimer({
+    seconds: window.SOM.stubSpec.seconds,
+    onTick: function (secondsLeft) {
+      hud.setClock(secondsLeft);
+    },
+    onExpire: function () {
+      hud.setClock(0);
+      window.SOM.state.stop();
+    }
+  });
+  window.SOM.clock.start();
 
   document.addEventListener("keydown", function (event) {
     const mapped = window.SOM.keys.actionFor(event);

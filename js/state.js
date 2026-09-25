@@ -84,6 +84,12 @@ window.SOM.state = (function () {
     return true;
   }
 
+  /* End the session early (time-up in Phase 1 step 3): sets done semantics so
+     every later key is refused without touching cells or views. */
+  function stop() {
+    done = true;
+  }
+
   /* action/char come from keys.actionFor. Returns whether the key was acted on. */
   function handle(action, char) {
     if (done) return false;
@@ -97,5 +103,5 @@ window.SOM.state = (function () {
     return { cursor: cursor, filled: filled, total: total, done: done };
   }
 
-  return { start: start, handle: handle, info: info };
+  return { start: start, stop: stop, handle: handle, info: info };
 })();

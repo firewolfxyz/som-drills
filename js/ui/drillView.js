@@ -11,12 +11,13 @@ window.SOM.drillView = (function () {
     return node;
   }
 
-  /* Returns the progress element so entry wiring can update it (step 3 owns the
-     clock element; nothing here writes to either). */
+  /* Returns the HUD elements entry wiring updates (clock and progress counter);
+     the static clock text is a placeholder the countdown overwrites at start. */
   function renderHud(container, spec) {
     const hud = el("header", "hud");
     hud.appendChild(el("h1", "hud-name", spec.name));
-    hud.appendChild(el("div", "hud-clock", "5:00"));
+    const clock = el("div", "hud-clock", "5:00");
+    hud.appendChild(clock);
     const progress = el(
       "div",
       "hud-progress",
@@ -24,7 +25,7 @@ window.SOM.drillView = (function () {
     );
     hud.appendChild(progress);
     container.appendChild(hud);
-    return progress;
+    return { clock: clock, progress: progress };
   }
 
   /* Header row: corner cell, then one column header per column. */
@@ -50,10 +51,10 @@ window.SOM.drillView = (function () {
     return row;
   }
 
-  /* Returns the elements entry wiring needs: the grid and the progress counter. */
+  /* Returns the elements entry wiring needs: the grid and both HUD counters. */
   function render(container, spec) {
     container.innerHTML = "";
-    const progress = renderHud(container, spec);
+    const hudEls = renderHud(container, spec);
 
     const grid = el("div", "drill-grid");
     grid.appendChild(renderHeaderRow(spec));
@@ -62,7 +63,7 @@ window.SOM.drillView = (function () {
     });
 
     container.appendChild(grid);
-    return { grid: grid, progress: progress };
+    return { grid: grid, progress: hudEls.progress, clock: hudEls.clock };
   }
 
   return { render: render };
