@@ -1,0 +1,35 @@
+/* Picker screen (js/ui/pickerView.js): one button per catalogue entry.
+   The list IS the validated config set, so new entries appear here with no
+   other change (docs/config.md "The picker is generated from configs"). */
+
+.picker-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.picker-item {
+  margin: 0 0 0.5rem;
+}
+
+.picker-button {
+  background: #fff;
+  border: 1px solid #bbb;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.picker-button:hover,
+.picker-button:focus {
+  background: #fff3c4;
+  outline: 2px solid #b8860b;
+}

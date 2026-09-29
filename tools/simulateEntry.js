@@ -16,15 +16,22 @@ function makeNode(tag) {
     dataset: {},
     children: [],
     _text: "",
+    _listeners: {},
     appendChild(child) { node.children.push(child); return child; },
+    addEventListener(type, fn) { (node._listeners[type] = node._listeners[type] || []).push(fn); },
+    click() {
+      (node._listeners.click || []).forEach((fn) => fn());
+    },
     querySelector(selector) { return node.querySelectorAll(selector)[0] || null; },
     querySelectorAll(selector) {
-      /* Class chains are written ".cell.answer" — split on dots, not spaces. */
-      const cls = selector.split(".").filter(Boolean);
+      /* Supports ".a.b" class chains and plain tag names ("button"). */
+      const isTag = !selector.startsWith(".");
+      const cls = isTag ? [] : selector.split(".").filter(Boolean);
       const out = [];
       (function walk(n) {
         n.children.forEach(function (c) {
-          const has = cls.every((k) => c._class.split(/\s+/).indexOf(k) !== -1);
+          const has = (isTag ? c.tag === selector : true) &&
+            cls.every((k) => c._class.split(/\s+/).indexOf(k) !== -1);
           if (has) out.push(c);
           walk(c);
         });
@@ -105,7 +112,31 @@ const key = (ch) => press({ code: "Digit" + ch, key: ch });
 const commit = () => press({ code: "Space", key: " " });
 const backspace = () => press({ code: "Backspace", key: "Backspace" });
 
+/* ---------- assertions ---------- */
+let failures = [];
+function check(label, actual, expected) {
+  const ok = JSON.stringify(actual) === JSON.stringify(expected);
+  if (!ok) failures.push(label + ": got " + JSON.stringify(actual));
+  console.log((ok ? "PASS" : "FAIL") + "  " + label + "  actual=" + JSON.stringify(actual));
+}
+
 const state = sandbox.SOM.state;
+
+/* ---------- Phase 4: the picker is the first screen ---------- */
+console.log("\n-- picker screen --");
+const pickerItems = appRoot.querySelectorAll(".picker-item");
+check("picker lists every catalogue entry", pickerItems.length,
+  sandbox.SOM.config.entries.length);
+check("picker item names match the catalogue",
+  pickerItems.map((li) => li.querySelector("button")._text),
+  sandbox.SOM.config.entries.map((e) => e.name));
+/* Keys on the picker screen are refused: no session has started. */
+key("5");
+check("digit on picker starts no session", state.info().started, false);
+/* Clicking an item starts that drill through main.js's wiring. */
+pickerItems[0].querySelector("button").click();
+check("picker click starts a session", state.info().started, true);
+
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of
    this file are reproducible). */
@@ -140,14 +171,6 @@ const clockText = () => {
   return el ? el._text : null;
 };
 const texts = () => orderedCells().map((c) => c._text);
-
-/* ---------- assertions ---------- */
-let failures = [];
-function check(label, actual, expected) {
-  const ok = JSON.stringify(actual) === JSON.stringify(expected);
-  if (!ok) failures.push(label + ": got " + JSON.stringify(actual));
-  console.log((ok ? "PASS" : "FAIL") + "  " + label + "  actual=" + JSON.stringify(actual));
-}
 
 console.log("loaded files: " + files.join(", "));
 console.log("cells rendered: " + liveCells().length);

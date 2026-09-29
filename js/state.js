@@ -13,6 +13,7 @@ window.SOM.state = (function () {
 
   let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
   let view, hud, resultView, secondsLeftFn, submitted, lastResult;
+  let started = false; /* the picker screen runs before any session starts */
 
   function start(specArg, views) {
     spec = specArg;
@@ -29,6 +30,7 @@ window.SOM.state = (function () {
     done = false;
     submitted = false;
     lastResult = null;
+    started = true;
     cursor = 0;
     view.highlight(cursor);
     updateHud();
@@ -116,9 +118,11 @@ window.SOM.state = (function () {
     if (resultView) resultView.show(lastResult);
   }
 
-  /* action/char come from keys.actionFor. Returns whether the key was acted on. */
+  /* action/char come from keys.actionFor. Returns whether the key was acted on.
+     Refused before start() so the always-on keydown listener is inert while
+     the picker screen is showing. */
   function handle(action, char) {
-    if (done) return false;
+    if (!started || done) return false;
     if (action === "digit") return onDigit(char);
     if (action === "commit") return onCommit();
     if (action === "back") return onBack();
@@ -131,6 +135,7 @@ window.SOM.state = (function () {
       filled: filled,
       total: total,
       done: done,
+      started: started,
       submitted: submitted,
       result: lastResult
     };
