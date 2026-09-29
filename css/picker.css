@@ -3,15 +3,19 @@
    other change (docs/config.md "The picker is generated from configs"). */
 
 .app-title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   margin: 0 0 1rem;
 }
 
 .picker-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin: 0 0 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #555;
+  margin: 0 0 0.75rem;
 }
 
 .picker-list {
@@ -26,11 +30,18 @@
 
 .picker-button {
   background: #fff;
-  border: 1px solid #bbb;
+  border: 1px solid #ccc;
+  border-left: 4px solid #b8860b;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  font-size: 1.25rem;
-  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.75rem 1rem;
   text-align: left;
+  text-transform: uppercase;
+  transition: transform 0.1s, box-shadow 0.1s;
   width: 100%;
 }
 
@@ -38,4 +49,6 @@
 .picker-button:focus {
   background: #fff3c4;
   outline: 2px solid #b8860b;
+  transform: translateX(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
