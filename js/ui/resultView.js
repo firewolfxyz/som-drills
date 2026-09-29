@@ -30,9 +30,10 @@ window.SOM.resultView = (function () {
     container.innerHTML = "";
     container.appendChild(el("h1", "result-title", spec.name));
 
-    /* Time remaining. The correct count is already visible in the grid
-       footer (per-column), so it is not repeated here. */
     const summary = el("div", "result-summary");
+    summary.appendChild(
+      el("span", "result-stat", result.correct + "/" + (rowCount * spec.cols.length) + " correct")
+    );
     summary.appendChild(el("span", "result-stat", result.secondsLeft + "s left"));
     container.appendChild(summary);
 
