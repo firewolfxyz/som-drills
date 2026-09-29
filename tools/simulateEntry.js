@@ -13,6 +13,13 @@ function makeNode(tag) {
   const node = {
     tag: tag,
     _class: "",
+    /* Minimal style bag: the renderers set custom properties (--cols) for
+       the row grid template; the shim records them without resolving CSS. */
+    style: {
+      _props: {},
+      setProperty(name, value) { this._props[name] = String(value); },
+      getProperty(name) { return this._props[name] || null; }
+    },
     dataset: {},
     children: [],
     _text: "",

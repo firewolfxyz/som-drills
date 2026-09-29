@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>probeKeyboard</title>
+<link rel="stylesheet" href="../css/base.css"><link rel="stylesheet" href="../css/hud.css">
+<link rel="stylesheet" href="../css/grid.css"><link rel="stylesheet" href="../css/result.css">
+<link rel="stylesheet" href="../css/picker.css"></head>
+<body><main id="app"></main><div id="keypad" hidden></div>
+<script src="../js/random.js"></script><script src="../js/config.js"></script>
+<script src="../js/walk.js"></script><script src="../js/generators/add.js"></script>
+<script src="../js/generators/subtract.js"></script><script src="../js/generators/multiply.js"></script>
+<script src="../js/generators/divide.js"></script><script src="../js/generators/generate.js"></script>
+<script src="../js/rules.js"></script><script src="../js/keys.js"></script>
+<script src="../js/ui/pickerView.js"></script><script src="../js/ui/drillView.js"></script>
+<script src="../js/ui/entryView.js"></script><script src="../js/ui/drillHud.js"></script>
+<script src="../js/ui/resultView.js"></script><script src="../js/ui/keypadView.js"></script>
+<script src="../js/timer.js"></script><script src="../js/state.js"></script>
+<script src="../js/main.js"></script>
+<script>
+(function(){
+  var log = [];
+  try {
+    // 1. Picker is visible
+    log.push("picker:" + !!document.querySelector(".picker-button"));
+
+    // 2. Click first entry to start drill
+    document.querySelector(".picker-button").click();
+    log.push("drill:" + !!document.querySelector(".drill-grid"));
+
+    // 3. Fill all 40 cells: type "1" then Enter, repeated 40 times
+    for(var i = 0; i < 40; i++){
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "1", bubbles: true}));
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+    }
+
+    // 4. Check state info
+    var info = window.SOM.state.info();
+    log.push("filled:" + info.filled + "/" + info.total);
+    log.push("done:" + info.done);
+    log.push("submitted:" + info.submitted);
+
+    // 5. Check result view (replaces #app contents)
+    log.push("result:" + !!document.querySelector(".result-title"));
+    var score = document.querySelector(".result-score");
+    if(score) log.push("score:" + score.textContent.trim());
+
+    // 6. Verify graded grid is present with correct/incorrect cells
+    var correct = document.querySelectorAll(".is-correct").length;
+    var incorrect = document.querySelectorAll(".is-incorrect").length;
+    log.push("graded:" + correct + "c+" + incorrect + "x=" + (correct+incorrect));
+
+    // 7. Back link present
+    log.push("back:" + !!document.querySelector(".result-back"));
+  } catch(e) {
+    log.push("ERROR:" + e.message);
+  }
+  document.title = JSON.stringify(log);
+})();
+</script></body></html>

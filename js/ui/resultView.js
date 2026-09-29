@@ -43,8 +43,11 @@ window.SOM.resultView = (function () {
        live in the grid footer row, one under each column). */
     renderSessionSummary(container, result);
 
-    /* Graded grid: same shape as the drill, each cell carrying its verdict. */
+    /* Graded grid: same shape as the drill, each cell carrying its verdict.
+       Same row template as drillView (--cols from the spec) so the footer
+       stats line up under their columns. */
     const grid = el("div", "drill-grid");
+    grid.style.setProperty("--cols", String(spec.cols.length));
     const headerRow = el("div", "drill-row");
     headerRow.appendChild(el("div", "cell corner"));
     spec.cols.forEach(function (col) {

@@ -135,7 +135,15 @@ check("spec has negative rows to render", signedSpec.rows.filter((r) => r < 0).l
    appends, and sets className/textContent. The UI module is loaded into this
    sandbox too, so the render is the real drillView code path. */
 function makeNode(tag) {
-  const node = { tag, children: [], className: "", dataset: {}, _text: "" };
+  const node = {
+    tag,
+    children: [],
+    className: "",
+    /* Minimal style bag for the --cols custom property the renderers set. */
+    style: { _props: {}, setProperty(n, v) { this._props[n] = String(v); } },
+    dataset: {},
+    _text: ""
+  };
   node.appendChild = (child) => node.children.push(child);
   Object.defineProperty(node, "textContent", {
     get() { return node._text; },

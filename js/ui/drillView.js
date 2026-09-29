@@ -27,6 +27,13 @@ window.SOM.drillView = (function () {
     return { progress: progress };
   }
 
+  /* The shared row template: one fixed row-header track plus one flexible
+     track per column (css/grid.css). Set on the grid so every row — header,
+     data, and any footer — resolves the same columns. */
+  function setColumns(gridEl, spec) {
+    gridEl.style.setProperty("--cols", String(spec.cols.length));
+  }
+
   /* Header row: corner cell, then one column header per column. */
   function renderHeaderRow(spec) {
     const row = el("div", "drill-row");
@@ -56,6 +63,7 @@ window.SOM.drillView = (function () {
     const hudEls = renderHud(container, spec);
 
     const grid = el("div", "drill-grid");
+    setColumns(grid, spec);
     grid.appendChild(renderHeaderRow(spec));
     spec.rows.forEach(function (row, rowIndex) {
       grid.appendChild(renderDataRow(spec, rowIndex));

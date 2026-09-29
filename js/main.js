@@ -14,6 +14,7 @@ window.SOM = window.SOM || {};
 
 (function () {
   const app = document.getElementById("app");
+  const keypadEl = document.getElementById("keypad");
   const fragment = (window.location.hash || "").replace(/^#/, "");
 
   function parseFragmentParam(name) {
@@ -40,10 +41,12 @@ window.SOM = window.SOM || {};
       view: window.SOM.entryView,
       hud: hud,
       /* Phase 3 reveal: state hands the graded result to this view when the
-         grid is complete or time runs out. */
+         grid is complete or time runs out. The keypad is a drill-screen
+         thing: hide it once the result is up. */
       result: {
         show: function (result) {
           window.SOM.resultView.show(app, result);
+          window.SOM.keypadView.hide(keypadEl);
         }
       },
       /* Time remaining at submit, read from the clock wired below. */
@@ -61,6 +64,22 @@ window.SOM = window.SOM || {};
       }
     });
     window.SOM.clock.start();
+
+    /* Touch entry (Phase 5): the keypad is a drill-screen control. */
+    if (touchDevice) window.SOM.keypadView.show(keypadEl);
+  }
+
+  /* Touch entry (Phase 5): render the on-screen keypad only for coarse
+     pointers / touch devices; keyboard-only screens never see it. Taps map
+     to the same actions as keys and go through state.handle, which is inert
+     while the picker shows or after submit. */
+  const touchDevice = (window.matchMedia &&
+      window.matchMedia("(pointer: coarse)").matches) ||
+    ("ontouchstart" in window);
+  if (touchDevice) {
+    window.SOM.keypadView.render(keypadEl, function (action, char) {
+      window.SOM.state.handle(action, char);
+    });
   }
 
   /* The picker is the first screen; a #drill= fragment skips it. */

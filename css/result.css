@@ -33,15 +33,12 @@
   margin: 0.5rem 0 0.25rem;
 }
 
-/* Footer row of the graded grid: one correct-count stat under each column.
-   Same sizing as the answer cells so each stat spans its own column and
-   sits exactly below that column's numbers. */
+/* Footer row of the graded grid: one correct-count stat per track, so each
+   sits exactly below its column's numbers (same template as every row). */
 .cell.colstat {
   border-top: 2px solid #1a1a1a;
   color: #333;
-  flex: 1 1 0;
   margin: 2px;
-  min-width: 0;
   font-size: 1.25rem;
   font-weight: 600;
   justify-content: center;

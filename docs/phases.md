@@ -50,6 +50,25 @@ missed cells, pace.
 Mobile + touch entry, keyboard-only flow verified end to end, accessible contrast,
 static deploy.
 
+### Completed
+
+- **Touch / mobile** — on-screen keypad (`js/ui/keypadView.js`, `css/keypad.css`)
+  shown on coarse-pointer devices; grid uses CSS Grid with `minmax(0,1fr)`
+  tracks so it shrinks to fit any viewport ≥ 320px.
+- **Keyboard E2E** — `tools/probeKeyboard.html` verifies the full flow:
+  picker → drill → 40 cells filled via keydown events → auto-submit → result
+  view with graded grid and score.
+- **WCAG contrast** — all text/background pairs meet AA (≥ 4.5:1) or
+  AA-large (≥ 3:1 for text ≥ 18 pt). The closest pair is `#2e7d32` on
+  `#d8f0d8` (correct cells) at 4.24:1, which passes AA-large since the cell
+  font is 1.5 rem (24 px = 18 pt).
+- **Static deploy** — no build step, no modules, no imports. The app is the
+  directory itself. Any static file server works:
+  - `python -m http.server 8000` then open `http://localhost:8000`
+  - GitHub Pages / Netlify / S3: upload the whole folder, set `index.html`
+    as the default document.
+  - Or simply double-click `index.html` (works over `file://`).
+
 ## Deferred (not rejected)
 
 - **Fraction drills** — operator decision to skip for now. Unknowns: what fraction

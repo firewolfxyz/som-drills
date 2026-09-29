@@ -1,0 +1,56 @@
+/* On-screen keypad for touch entry (js/ui/keypadView.js, Phase 5). Targets
+   are at least 44x44px so a drill stays usable with a finger. */
+
+.keypad {
+  display: grid;
+  gap: 0.375rem;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 1rem;
+  max-width: 24rem;
+}
+
+.keypad-key {
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  min-height: 3rem; /* 48px at the base size */
+  min-width: 3rem;
+  padding: 0.25rem 0;
+  touch-action: manipulation;
+}
+
+.keypad-key:active {
+  background: #fff3c4;
+  outline: 2px solid #b8860b;
+}
+
+/* Phones: the grid must fit five columns of answer cells plus the row-header
+   column on a narrow screen, so shrink cell type and padding. */
+@media (max-width: 40rem) {
+  .cell {
+    padding: 0.375rem 0.25rem;
+  }
+
+  /* Narrow the fixed row-header track so five answer columns fit a phone. */
+  .drill-grid {
+    --rowhead: 3.25rem;
+  }
+
+  .cell.rowhead {
+    font-size: 1.125rem;
+  }
+
+  .cell.header,
+  .cell.answer {
+    font-size: 1.125rem;
+    min-height: 2.5rem; /* still a comfortable touch target */
+  }
+
+  #app {
+    padding: 0.75rem;
+  }
+}

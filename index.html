@@ -11,10 +11,15 @@
   <link rel="stylesheet" href="css/grid.css">
   <link rel="stylesheet" href="css/result.css">
   <link rel="stylesheet" href="css/picker.css">
+  <link rel="stylesheet" href="css/keypad.css">
 </head>
 <body>
   <!-- Single root container; every view renders inside it. -->
   <main id="app"></main>
+
+  <!-- On-screen keypad for touch devices (Phase 5). Lives outside #app so
+       view re-rendals do not destroy it; hidden on keyboard-only screens. -->
+  <div id="keypad" hidden></div>
 
   <script src="js/random.js"></script>
   <script src="js/config.js"></script>
@@ -31,6 +36,7 @@
   <script src="js/ui/entryView.js"></script>
   <script src="js/ui/drillHud.js"></script>
   <script src="js/ui/resultView.js"></script>
+  <script src="js/ui/keypadView.js"></script>
   <script src="js/timer.js"></script>
   <script src="js/state.js"></script>
   <script src="js/main.js"></script>
