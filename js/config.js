@@ -195,11 +195,11 @@ window.SOM = window.SOM || {};
       answer: "quotientRemainder"
     },
     {
-      name: "3 x 1 multiplication",
+      name: "3 x 1 multiplication 10x8",
       operator: "multiply",
-      rows: { count: 8, digits: 3, signed: false },
-      columns: { count: 5, digits: 1 },
-      seconds: 300,
+      rows: { count: 10, digits: 3, signed: false },
+      columns: { count: 8, digits: 1 },
+      seconds: 600,
       answer: "integer"
     }
   ];
