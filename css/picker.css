@@ -2,6 +2,12 @@
    The list IS the validated config set, so new entries appear here with no
    other change (docs/config.md "The picker is generated from configs"). */
 
+.app-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+
 .picker-title {
   font-size: 1.25rem;
   font-weight: 600;

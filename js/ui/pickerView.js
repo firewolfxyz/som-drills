@@ -17,7 +17,8 @@ window.SOM.pickerView = (function () {
      clicked; each item also carries data-index for tools/ checks. */
   function render(container, entries, onPick) {
     container.innerHTML = "";
-    container.appendChild(el("h1", "picker-title", "choose a drill"));
+    container.appendChild(el("h1", "app-title", "som driller"));
+    container.appendChild(el("h2", "picker-title", "choose a drill"));
 
     const list = el("ul", "picker-list");
     entries.forEach(function (entry, index) {
