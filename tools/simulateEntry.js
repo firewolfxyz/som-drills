@@ -264,8 +264,8 @@ check("graded cell count", graded.length, 40);
 check("every graded cell has a verdict",
   graded.filter((c) => c.classList.contains("is-correct") ||
                        c.classList.contains("is-incorrect")).length, 40);
-const scoreEl = appRoot.querySelector(".result-score");
-check("score rendered in summary", scoreEl._text, "score " + completedResult.score);
+check("score not displayed (known at grade time)",
+  appRoot.querySelector(".result-score"), null);
 
 console.log("\n-- entry stops when the grid is full --");
 const lastBefore = texts()[39];

@@ -1,7 +1,7 @@
 /* UI only: the reveal screen (docs/ui.md "Screens" 3). Renders the graded
    grid — every answer cell marked correct/incorrect, a footer row with each
    column's correct count, plus the session summary (correct count, time
-   remaining, score; missed cells, pace per docs/phases.md Phase 4) and a
+   remaining; missed cells, pace per docs/phases.md Phase 4) and a
    back-to-drills link.
 
    It displays results; it computes none of them. The per-cell booleans come
@@ -30,13 +30,13 @@ window.SOM.resultView = (function () {
     container.innerHTML = "";
     container.appendChild(el("h1", "result-title", spec.name));
 
-    /* Summary: correct cells, time left, score (= correct + seconds left). */
+    /* Summary: correct cells and time left. (The score — correct + seconds
+       left — is known the moment grading runs, so it is not displayed.) */
     const summary = el("div", "result-summary");
     summary.appendChild(
       el("span", "result-stat", result.correct + "/" + (rowCount * spec.cols.length) + " correct")
     );
     summary.appendChild(el("span", "result-stat", result.secondsLeft + "s left"));
-    summary.appendChild(el("span", "result-score", "score " + result.score));
     container.appendChild(summary);
 
     /* Session summary: missed cells and pace (per-column correct counts

@@ -9,7 +9,7 @@ other than "answers are typed into cells".
 1. **Picker** — list of drills, generated from the config set. Phase 1 may show a
    single entry (`2 x 1 addition`).
 2. **Drill** — the grid plus HUD. This is the whole app in Phase 1.
-3. **Result** — graded grid: per-cell correct/incorrect, score, time remaining.
+3. **Result** — graded grid: per-cell correct/incorrect, time remaining.
    Deferred to Phase 3; stubbed in Phase 1.
 
 ## Drill screen layout
@@ -81,7 +81,7 @@ css/grid.css        grid + cells + active state (swappable styling)
 js/main.js          wiring only
 js/ui/picker.js     drill list from configs
 js/ui/drillView.js  render grid, highlight active cell, echo typed digits
-js/ui/resultView.js graded grid + score (Phase 3; stub now)
+js/ui/resultView.js graded grid (Phase 3; stub now)
 ```
 
 Logic lives apart from these:

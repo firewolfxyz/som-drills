@@ -57,7 +57,7 @@ static deploy.
   tracks so it shrinks to fit any viewport ≥ 320px.
 - **Keyboard E2E** — `tools/probeKeyboard.html` verifies the full flow:
   picker → drill → 40 cells filled via keydown events → auto-submit → result
-  view with graded grid and score.
+  view with graded grid.
 - **WCAG contrast** — all text/background pairs meet AA (≥ 4.5:1) or
   AA-large (≥ 3:1 for text ≥ 18 pt). The closest pair is `#2e7d32` on
   `#d8f0d8` (correct cells) at 4.24:1, which passes AA-large since the cell

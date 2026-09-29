@@ -39,8 +39,7 @@
 
     // 5. Check result view (replaces #app contents)
     log.push("result:" + !!document.querySelector(".result-title"));
-    var score = document.querySelector(".result-score");
-    if(score) log.push("score:" + score.textContent.trim());
+    log.push("no-score:" + (document.querySelector(".result-score") === null));
 
     // 6. Verify graded grid is present with correct/incorrect cells
     var correct = document.querySelectorAll(".is-correct").length;
