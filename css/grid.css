@@ -56,3 +56,14 @@
   background: #fff3c4;
   outline: 3px solid #b8860b;
 }
+
+/* Phase 3 reveal: per-cell verdicts (applied by js/ui/resultView.js). */
+.cell.answer.is-correct {
+  background: #d8f0d8;
+  border-color: #2e7d32;
+}
+
+.cell.answer.is-incorrect {
+  background: #f8d7da;
+  border-color: #b71c1c;
+}

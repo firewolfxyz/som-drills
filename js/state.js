@@ -1,18 +1,21 @@
 /* Entry controller: applies one mapped key action to the drill session and holds
    in-memory entry state (typed text per cell, filled flags, cursor) — docs/ui.md
    assigns "entries + cursor" to this module. It delegates work order to rules.js,
-   key meaning to keys.js, DOM text/highlight to entryView, counter to drillHud.
-   Answers are never consulted here; grading is Phase 3. */
+   key meaning to keys.js, DOM text/highlight to entryView, counter to drillHud,
+   and the graded reveal to resultView (Phase 3). Grading itself lives in
+   rules.js — this module only decides WHEN a session ends: grid complete or
+   time up. */
 
 window.SOM = window.SOM || {};
 
 window.SOM.state = (function () {
   const MAX_CHARS = 6; /* cap typed length; extra digits are ignored */
 
-  let rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
-  let view, hud;
+  let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
+  let view, hud, resultView, secondsLeftFn, submitted, lastResult;
 
-  function start(spec, views) {
+  function start(specArg, views) {
+    spec = specArg;
     rowCount = spec.rows.length;
     colCount = spec.cols.length;
     total = window.SOM.rules.cellCount(rowCount, colCount);
@@ -20,8 +23,12 @@ window.SOM.state = (function () {
     filledFlags = new Array(total).fill(false);
     view = views.view;
     hud = views.hud;
+    resultView = views.result || null;
+    secondsLeftFn = views.secondsLeft || function () { return 0; };
     filled = 0;
     done = false;
+    submitted = false;
+    lastResult = null;
     cursor = 0;
     view.highlight(cursor);
     updateHud();
@@ -54,7 +61,7 @@ window.SOM.state = (function () {
     updateHud();
     const next = window.SOM.rules.advance(cursor, rowCount, colCount);
     if (next.done) {
-      done = true; /* grid complete: entry stops, nothing is graded here */
+      submit(); /* grid complete: grade everything and reveal */
       return true;
     }
     cursor = next;
@@ -84,10 +91,29 @@ window.SOM.state = (function () {
     return true;
   }
 
-  /* End the session early (time-up in Phase 1 step 3): sets done semantics so
-     every later key is refused without touching cells or views. */
+  /* Time-up: end the session and submit whatever is filled in (phases.md
+     Phase 3). The clock's remaining seconds are read through the getter passed
+     at start, so this module never owns a timer. */
   function stop() {
+    submit();
+  }
+
+  /* Grade every cell in one pass and hand the result to the result view.
+     Idempotent: once submitted, every later key is refused and nothing is
+     re-graded or re-revealed. */
+  function submit() {
+    if (submitted) return;
+    submitted = true;
     done = true;
+    const texts = typed.map(function (t) { return t === null ? "" : t; });
+    const secondsLeft = secondsLeftFn();
+    lastResult = window.SOM.rules.grade(spec, texts, secondsLeft);
+    /* The result view renders from this object alone. */
+    lastResult.spec = spec;
+    lastResult.texts = texts;
+    lastResult.secondsLeft = secondsLeft;
+    lastResult.filled = filled;
+    if (resultView) resultView.show(lastResult);
   }
 
   /* action/char come from keys.actionFor. Returns whether the key was acted on. */
@@ -100,7 +126,14 @@ window.SOM.state = (function () {
   }
 
   function info() {
-    return { cursor: cursor, filled: filled, total: total, done: done };
+    return {
+      cursor: cursor,
+      filled: filled,
+      total: total,
+      done: done,
+      submitted: submitted,
+      result: lastResult
+    };
   }
 
   return { start: start, stop: stop, handle: handle, info: info };

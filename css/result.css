@@ -1,0 +1,32 @@
+/* Phase 3 result screen (js/ui/resultView.js): title, summary line, back
+   link. The graded grid itself reuses .drill-grid / .cell from grid.css. */
+
+.result-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.result-summary {
+  align-items: baseline;
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.result-stat {
+  color: #555;
+  font-size: 1.125rem;
+}
+
+.result-score {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.result-back {
+  display: inline-block;
+  font-size: 1.125rem;
+  margin-top: 1rem;
+}

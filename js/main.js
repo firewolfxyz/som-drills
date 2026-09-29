@@ -1,6 +1,7 @@
 /* Wiring only: generate the grid spec from the catalogue, render it, then
-   connect key events to the entry controller. No rules, no generation, and no
-   grading live here (docs/ui.md "Code layout for UI").
+   connect key events to the entry controller and the clock to the session.
+   No rules, no generation, and no grading live here (docs/ui.md "Code layout
+   for UI").
 
    Reproducible runs for verification: add a seed to the URL fragment, e.g.
      index.html#seed=1234567890
@@ -29,11 +30,21 @@ window.SOM = window.SOM || {};
   hud.setClock(spec.seconds);
   window.SOM.state.start(spec, {
     view: window.SOM.entryView,
-    hud: hud
+    hud: hud,
+    /* Phase 3 reveal: state hands the graded result to this view when the
+       grid is complete or time runs out. */
+    result: {
+      show: function (result) {
+        window.SOM.resultView.show(document.getElementById("app"), result);
+      }
+    },
+    /* Time remaining at submit, read from the clock wired below. */
+    secondsLeft: function () { return window.SOM.clock.secondsLeft(); }
   });
 
-  /* Countdown from the spec's seconds; at zero entry stops so no key can act
-     on anything any more (docs/ui.md "Timing"). Exposed for tools/ checks. */
+  /* Countdown from the spec's seconds; at zero the session submits whatever
+     is filled in (docs/ui.md "Timing", phases.md Phase 3). Exposed for
+     tools/ checks. */
   window.SOM.clock = window.SOM.timer.createTimer({
     seconds: spec.seconds,
     onTick: function (secondsLeft) {

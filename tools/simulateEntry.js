@@ -130,8 +130,15 @@ const activeIndex = () => {
   const active = orderedCells().find((c) => c.classList.contains("is-active"));
   return active === undefined ? -1 : orderedCells().indexOf(active);
 };
-const progressText = () => appRoot.querySelector(".hud-progress")._text;
-const clockText = () => appRoot.querySelector(".hud-clock")._text;
+/* Null-safe: the Phase 3 reveal replaces #app, so HUD nodes can be gone. */
+const progressText = () => {
+  const el = appRoot.querySelector(".hud-progress");
+  return el ? el._text : null;
+};
+const clockText = () => {
+  const el = appRoot.querySelector(".hud-clock");
+  return el ? el._text : null;
+};
 const texts = () => orderedCells().map((c) => c._text);
 
 /* ---------- assertions ---------- */
@@ -148,6 +155,12 @@ console.log("\n-- start --");
 check("cursor", state.info().cursor, 0);
 check("active cell index", activeIndex(), 0);
 check("progress", progressText(), "0/40");
+
+console.log("\n-- clock: wired timer ticks down every second --");
+const clock = sandbox.SOM.clock;
+check("clock starts from the spec's seconds", clockText(), "5:00");
+clock.tick(); /* the shim has no setInterval; tick() stands in for one second */
+check("one tick shows 4:59", clockText(), "4:59");
 
 console.log("\n-- type 19 then commit twice --");
 ["1", "9"].forEach(key);
@@ -201,42 +214,49 @@ check(
 );
 console.log("cells visited in walk: " + visitedOrder.length);
 check("filled count at end", state.info().filled, 40);
+/* Phase 3: completing the last cell submits and reveals immediately. */
+check("submitted flag set on completion", state.info().submitted, true);
 check("done flag", state.info().done, true);
-check("progress at end", progressText(), "40/40");
+/* The reveal replaces #app: HUD and drill grid are gone by construction. */
+check("HUD replaced by result screen", clockText(), null);
+const completedResult = state.info().result;
+check("completion graded every cell", completedResult.results.length, 40);
+check("completion correct count matches grade", completedResult.correct,
+  completedResult.results.filter(Boolean).length);
+check("completion score is correct + seconds left",
+  completedResult.score, completedResult.correct + completedResult.secondsLeft);
+/* All 40 cells were filled, so every graded cell shows its text (no em dash). */
 check("non-empty cells", texts().filter((t) => t !== "").length, 40);
 console.log("first 5 cell texts: " + JSON.stringify(texts().slice(0, 5)));
+/* Graded cells: exactly one verdict class each. */
+const graded = appRoot.querySelectorAll(".cell.answer");
+check("graded cell count", graded.length, 40);
+check("every graded cell has a verdict",
+  graded.filter((c) => c.classList.contains("is-correct") ||
+                       c.classList.contains("is-incorrect")).length, 40);
+const scoreEl = appRoot.querySelector(".result-score");
+check("score rendered in summary", scoreEl._text, "score " + completedResult.score);
 
 console.log("\n-- entry stops when the grid is full --");
 const lastBefore = texts()[39];
-const activeBefore = activeIndex();
+const activeBefore = activeIndex(); /* -1: no active cell on the result screen */
 key("7");
 commit();
 check("after full: filled", state.info().filled, 40);
 check("after full: last cell text unchanged", texts()[39], lastBefore);
 check("after full: highlight unchanged", activeIndex(), activeBefore);
 
-console.log("\n-- clock: wired timer ticks down every second --");
-const clock = sandbox.SOM.clock;
-check("clock starts from the spec's seconds", clockText(), "5:00");
-clock.tick(); /* the shim has no setInterval; tick() stands in for one second */
-check("one tick shows 4:59", clockText(), "4:59");
-
-console.log("\n-- time-up stops entry --");
-/* Tick the wired clock to exactly zero; no real waiting (no setInterval here).
-   Runs before the rerender below so main.js's own hud writes hit live nodes. */
-while (clock.secondsLeft() > 1) clock.tick();
-check("one tick before zero", clockText(), "0:01");
-const filledAtExpiry = state.info().filled;
-clock.tick(); /* reaches zero: onExpire stops state, clock shows 0:00 */
-check("clock at zero", clockText(), "0:00");
+console.log("\n-- time-up after completion is a no-op (idempotent submit) --");
+/* Tick the wired clock to zero; onExpire calls state.stop() again, which must
+   not re-grade or re-render. No real waiting (no setInterval here). */
+const resultBeforeExpiry = JSON.stringify(completedResult);
+while (clock.secondsLeft() > 0) clock.tick();
 check("timer stopped itself", clock.isRunning(), false);
-check("done flag set by time-up", state.info().done, true);
-const textsAtExpiry = texts();
+check("result unchanged after expiry", JSON.stringify(state.info().result), resultBeforeExpiry);
 key("9");
 commit();
 backspace();
-check("keys after expiry change no text", texts(), textsAtExpiry);
-check("keys after expiry fill nothing", state.info().filled, filledAtExpiry);
+check("keys after expiry fill nothing", state.info().filled, 40);
 check("handle refuses after expiry", state.handle("digit", "1"), false);
 
 console.log("\n-- timer unit checks (injectable, no waiting) --");
@@ -260,7 +280,8 @@ t.start();
 check("expired timer will not restart", t.isRunning(), false);
 
 console.log("\n-- backspace: mid-cell removes one char --");
-/* Restart the drill for a clean backspace test. */
+/* Restart the drill for a clean backspace test. No result view is wired here:
+   finishing this session must end silently, not crash on a missing view. */
 sandbox.SOM.drillView.render(appRoot, spec);
 sandbox.SOM.entryView.setup(appRoot.querySelector(".drill-grid"));
 sandbox.SOM.state.start(spec, {
