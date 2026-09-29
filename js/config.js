@@ -169,6 +169,38 @@ window.SOM = window.SOM || {};
       columns: { count: 8, digits: 1 },
       seconds: 600,
       answer: "integer"
+    },
+    {
+      name: "2 x 1 multiplication 10x8",
+      operator: "multiply",
+      rows: { count: 10, digits: 2, signed: false },
+      columns: { count: 8, digits: 1 },
+      seconds: 600,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 subtraction 10x8",
+      operator: "subtract",
+      rows: { count: 10, digits: 2, signed: false },
+      columns: { count: 8, digits: 1 },
+      seconds: 600,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 division 10x8",
+      operator: "divide",
+      rows: { count: 10, digits: 2, signed: false },
+      columns: { count: 8, digits: 1 },
+      seconds: 600,
+      answer: "quotientRemainder"
+    },
+    {
+      name: "3 x 1 multiplication",
+      operator: "multiply",
+      rows: { count: 8, digits: 3, signed: false },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "integer"
     }
   ];
 
