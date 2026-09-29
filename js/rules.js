@@ -56,5 +56,43 @@ window.SOM.rules = (function () {
     return { results: results, correct: correct, score: correct + secondsLeft };
   }
 
-  return { advance: advance, back: back, cellCount: cellCount, grade: grade };
+  /* Session summary (docs/phases.md Phase 4), computed from the same inputs
+     as grade():
+
+     columns   - per-column accuracy: { correct, total } for each column,
+                 in left-to-right order.
+     missed    - work-order indices of every cell that was empty or wrong,
+                 in work order (the cells to review).
+     pace      - seconds per filled cell over the elapsed time (spec.seconds -
+                 secondsLeft); null when nothing was filled, so the caller
+                 never divides by zero.
+
+     Pure logic: no DOM, no clock access — the caller passes the numbers. */
+  function summarize(spec, texts, results, filled, secondsLeft) {
+    const rowCount = spec.rows.length;
+    const colCount = spec.cols.length;
+    const columns = [];
+    for (let col = 0; col < colCount; col += 1) {
+      let correct = 0;
+      for (let row = 0; row < rowCount; row += 1) {
+        if (results[col * rowCount + row]) correct += 1;
+      }
+      columns.push({ correct: correct, total: rowCount });
+    }
+    const missed = [];
+    for (let index = 0; index < results.length; index += 1) {
+      if (!results[index]) missed.push(index);
+    }
+    const elapsed = spec.seconds - secondsLeft;
+    const pace = filled > 0 ? elapsed / filled : null;
+    return { columns: columns, missed: missed, pace: pace, filled: filled };
+  }
+
+  return {
+    advance: advance,
+    back: back,
+    cellCount: cellCount,
+    grade: grade,
+    summarize: summarize
+  };
 })();

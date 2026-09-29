@@ -115,6 +115,10 @@ window.SOM.state = (function () {
     lastResult.texts = texts;
     lastResult.secondsLeft = secondsLeft;
     lastResult.filled = filled;
+    /* Phase 4 session summary: per-column accuracy, missed cells, pace. */
+    lastResult.summary = window.SOM.rules.summarize(
+      spec, texts, lastResult.results, filled, secondsLeft
+    );
     if (resultView) resultView.show(lastResult);
   }
 
