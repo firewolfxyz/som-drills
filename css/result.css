@@ -33,16 +33,14 @@
   margin: 0.5rem 0 0.25rem;
 }
 
-.session-columns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.session-col {
-  background: #f4f4f4;
-  border-radius: 4px;
-  padding: 0.2rem 0.6rem;
+/* Footer row of the graded grid: one correct-count stat under each column,
+   aligned with the answer cells above it. */
+.cell.colstat {
+  border-top: 2px solid #1a1a1a;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  justify-content: center;
 }
 
 .session-missed,

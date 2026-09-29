@@ -1,7 +1,8 @@
 /* UI only: the reveal screen (docs/ui.md "Screens" 3). Renders the graded
-   grid — every answer cell marked correct/incorrect — plus the session
-   summary (correct count, time remaining, score; per-column accuracy,
-   missed cells, pace per docs/phases.md Phase 4) and a back-to-drills link.
+   grid — every answer cell marked correct/incorrect, a footer row with each
+   column's correct count, plus the session summary (correct count, time
+   remaining, score; missed cells, pace per docs/phases.md Phase 4) and a
+   back-to-drills link.
 
    It displays results; it computes none of them. The per-cell booleans come
    from rules.grade and the summary from rules.summarize, both via state.js,
@@ -38,7 +39,8 @@ window.SOM.resultView = (function () {
     summary.appendChild(el("span", "result-score", "score " + result.score));
     container.appendChild(summary);
 
-    /* Phase 4 session summary: per-column accuracy, missed cells, pace. */
+    /* Session summary: missed cells and pace (per-column correct counts
+       live in the grid footer row, one under each column). */
     renderSessionSummary(container, result);
 
     /* Graded grid: same shape as the drill, each cell carrying its verdict. */
@@ -66,6 +68,19 @@ window.SOM.resultView = (function () {
       });
       grid.appendChild(rowEl);
     });
+
+    /* Footer row: under the last number of each column, that column's
+       correct count (c/t). */
+    const footer = el("div", "drill-row");
+    footer.appendChild(el("div", "cell corner"));
+    spec.cols.forEach(function (col, colIndex) {
+      const stat = result.summary.columns[colIndex];
+      footer.appendChild(
+        el("div", "cell colstat", stat.correct + "/" + stat.total)
+      );
+    });
+    grid.appendChild(footer);
+
     container.appendChild(grid);
 
     /* Back to the picker: a plain reload. No navigation code, no history. */
@@ -74,8 +89,9 @@ window.SOM.resultView = (function () {
     container.appendChild(back);
   }
 
-  /* One line per column ("col <header>: c/t"), the missed work-order indices
-     as row/col pairs in work order, and pace in seconds per filled cell. */
+  /* The missed work-order indices as row/col pairs in work order, and pace
+     in seconds per filled cell. Per-column correct counts are rendered as a
+     footer row of the graded grid (one stat under each column). */
   function renderSessionSummary(container, result) {
     const spec = result.spec;
     const rowCount = spec.rows.length;
@@ -83,15 +99,6 @@ window.SOM.resultView = (function () {
 
     const block = el("div", "session-summary");
     block.appendChild(el("h2", "session-title", "summary"));
-
-    const columns = el("div", "session-columns");
-    summary.columns.forEach(function (colStat, colIndex) {
-      columns.appendChild(
-        el("span", "session-col",
-           "col " + spec.cols[colIndex] + ": " + colStat.correct + "/" + colStat.total)
-      );
-    });
-    block.appendChild(columns);
 
     /* Missed cells read as row/col so they can be found on the grid above. */
     const missedText = summary.missed.length === 0
