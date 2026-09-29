@@ -90,6 +90,28 @@ e = good(); e.name = "3 x 1 addition";
 expectThrow("name digits mismatch", e);
 e = good(); e.name = "2 x 1 add";
 expectThrow("name operator-word mismatch", e);
+/* signed marker: unsigned entry must not carry it */
+e = good(); e.name = "2 x 1 signed addition";
+expectThrow("unsigned name with signed marker", e);
+/* signed marker: a valid signed entry must PASS */
+e = good(); e.rows.signed = true; e.name = "2 x 1 signed addition";
+try { config.validate(e); pass("signed name accepted"); }
+catch (err) { fail("signed name accepted", err.message); }
+/* signed marker: a signed entry missing the marker must FAIL */
+e = good(); e.rows.signed = true; e.name = "2 x 1 addition";
+expectThrow("signed name missing marker", e);
+/* dimension suffix: an 80-cell twin keeps its dimensions in the name */
+e = good(); e.rows.count = 10; e.columns.count = 8; e.seconds = 600;
+e.name = "2 x 1 addition 10x8";
+try { config.validate(e); pass("80-cell dimension suffix accepted"); }
+catch (err) { fail("80-cell dimension suffix accepted", err.message); }
+/* dimension suffix: missing on a non-default grid must FAIL */
+e = good(); e.rows.count = 10; e.columns.count = 8; e.seconds = 600;
+e.name = "2 x 1 addition";
+expectThrow("80-cell name missing dimension suffix", e);
+/* dimension suffix: present on the default 8x5 must FAIL */
+e = good(); e.name = "2 x 1 addition 8x5";
+expectThrow("default grid with dimension suffix", e);
 
 bad.forEach(function (t) {
   try {

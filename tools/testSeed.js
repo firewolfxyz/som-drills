@@ -117,7 +117,7 @@ check("spec carries seconds from the entry", runA.seconds, entry.seconds);
 /* ---------- 4. drillView renders negative rows with a minus sign ---------- */
 console.log("\n-- 4. signed rows render with a minus sign (drillView) --");
 const signedEntry = SOM.config.validate({
-  name: "3 x 1 subtraction",
+  name: "3 x 1 signed subtraction",
   operator: "subtract",
   rows: { count: 8, digits: 3, signed: true },
   columns: { count: 5, digits: 1 },

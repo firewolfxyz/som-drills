@@ -144,7 +144,7 @@ check("division rows are all positive", divSpec.rows.every((r) => r > 0), true);
 /* ---------- 4. signed rows ---------- */
 console.log("\n-- 4. signed rows: walk magnitudes unchanged, answers signed --");
 const signedMulEntry = SOM.config.validate({
-  name: "3 x 1 multiplication",
+  name: "3 x 1 signed multiplication",
   operator: "multiply",
   rows: { count: 8, digits: 3, signed: true },
   columns: { count: 5, digits: 1 },
@@ -165,7 +165,7 @@ check("signed multiply row 2 uses the negative value", signedMul.answers[1], [-3
 check("unsigned multiply row 1 is unchanged", signedMul.answers[0], MUL_GRID.answers[0]);
 
 const signedSubEntry = SOM.config.validate({
-  name: "3 x 1 subtraction",
+  name: "3 x 1 signed subtraction",
   operator: "subtract",
   rows: { count: 8, digits: 3, signed: true },
   columns: { count: 5, digits: 1 },

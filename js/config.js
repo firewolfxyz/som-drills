@@ -89,8 +89,16 @@ window.SOM = window.SOM || {};
     } else if (PACE[cells] !== entry.seconds) {
       fail(entry, "seconds", cells + " cells require " + PACE[cells] + " s, got " + entry.seconds);
     }
-    /* Name convention: "<rows.digits> x <columns.digits> <operator-word>". */
-    const expectedName = entry.rows.digits + " x " + entry.columns.digits + " " + OPERATOR_WORDS[entry.operator];
+    /* Name convention:
+       "<rows.digits> x <columns.digits>[ signed] <operator-word>[ <R>x<C>]".
+       The "signed" marker appears exactly when rows.signed is true, so a signed
+       variant never collides with its unsigned twin. The dimension suffix
+       appears only when the grid is not the default 8x5, so an 80-cell twin of
+       the same digits/operator stays distinguishable in the picker. */
+    const expectedName = entry.rows.digits + " x " + entry.columns.digits +
+      (entry.rows.signed ? " signed" : "") + " " + OPERATOR_WORDS[entry.operator] +
+      (entry.rows.count === 8 && entry.columns.count === 5
+        ? "" : " " + entry.rows.count + "x" + entry.columns.count);
     if (entry.name !== expectedName) {
       fail(entry, "name", "expected \"" + expectedName + "\", got \"" + entry.name + "\"");
     }
@@ -102,7 +110,9 @@ window.SOM = window.SOM || {};
     return entry;
   }
 
-  /* The catalogue. Authored incrementally per docs/config.md. */
+  /* The catalogue. Authored incrementally per docs/config.md. The first entry
+     is the original `2 x 1 addition`; tools/ seeded regressions depend on it
+     staying exactly as-is, so new entries are appended after it. */
   const entries = [
     {
       name: "2 x 1 addition",
@@ -110,6 +120,54 @@ window.SOM = window.SOM || {};
       rows: { count: 8, digits: 2, signed: false },
       columns: { count: 5, digits: 1 },
       seconds: 300,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 multiplication",
+      operator: "multiply",
+      rows: { count: 8, digits: 2, signed: false },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 subtraction",
+      operator: "subtract",
+      rows: { count: 8, digits: 2, signed: false },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 division",
+      operator: "divide",
+      rows: { count: 8, digits: 2, signed: false },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "quotientRemainder"
+    },
+    {
+      name: "1 x 1 signed subtraction",
+      operator: "subtract",
+      rows: { count: 8, digits: 1, signed: true },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 signed addition",
+      operator: "add",
+      rows: { count: 8, digits: 2, signed: true },
+      columns: { count: 5, digits: 1 },
+      seconds: 300,
+      answer: "integer"
+    },
+    {
+      name: "2 x 1 addition 10x8",
+      operator: "add",
+      rows: { count: 10, digits: 2, signed: false },
+      columns: { count: 8, digits: 1 },
+      seconds: 600,
       answer: "integer"
     }
   ];
