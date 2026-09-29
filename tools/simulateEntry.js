@@ -179,11 +179,11 @@ check("cursor", state.info().cursor, 0);
 check("active cell index", activeIndex(), 0);
 check("progress", progressText(), "0/40");
 
-console.log("\n-- clock: wired timer ticks down every second --");
+console.log("\n-- time is hidden during the drill; timer still ticks --");
 const clock = sandbox.SOM.clock;
-check("clock starts from the spec's seconds", clockText(), "5:00");
+check("no clock element in the HUD", clockText(), null);
 clock.tick(); /* the shim has no setInterval; tick() stands in for one second */
-check("one tick shows 4:59", clockText(), "4:59");
+check("timer counts down internally", clock.secondsLeft(), 299);
 
 console.log("\n-- type 19 then commit twice --");
 ["1", "9"].forEach(key);
@@ -241,7 +241,7 @@ check("filled count at end", state.info().filled, 40);
 check("submitted flag set on completion", state.info().submitted, true);
 check("done flag", state.info().done, true);
 /* The reveal replaces #app: HUD and drill grid are gone by construction. */
-check("HUD replaced by result screen", clockText(), null);
+check("HUD replaced by result screen", progressText(), null);
 const completedResult = state.info().result;
 check("completion graded every cell", completedResult.results.length, 40);
 check("completion correct count matches grade", completedResult.correct,

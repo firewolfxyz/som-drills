@@ -11,13 +11,12 @@ window.SOM.drillView = (function () {
     return node;
   }
 
-  /* Returns the HUD elements entry wiring updates (clock and progress counter);
-     the static clock text is a placeholder the countdown overwrites at start. */
+  /* Returns the HUD elements entry wiring updates. The clock is deliberately
+     NOT rendered here (operator request): time is hidden during the drill and
+     only shown on the result screen (resultView). */
   function renderHud(container, spec) {
     const hud = el("header", "hud");
     hud.appendChild(el("h1", "hud-name", spec.name));
-    const clock = el("div", "hud-clock", "5:00");
-    hud.appendChild(clock);
     const progress = el(
       "div",
       "hud-progress",
@@ -25,7 +24,7 @@ window.SOM.drillView = (function () {
     );
     hud.appendChild(progress);
     container.appendChild(hud);
-    return { clock: clock, progress: progress };
+    return { progress: progress };
   }
 
   /* Header row: corner cell, then one column header per column. */

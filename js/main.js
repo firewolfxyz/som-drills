@@ -33,8 +33,9 @@ window.SOM = window.SOM || {};
 
     const rendered = window.SOM.drillView.render(app, spec);
     window.SOM.entryView.setup(rendered.grid);
-    const hud = window.SOM.drillHud.setup(rendered.progress, rendered.clock);
-    hud.setClock(spec.seconds);
+    /* No clock in the HUD: time is hidden during the drill and only shown on
+       the result screen (operator request). */
+    const hud = window.SOM.drillHud.setup(rendered.progress, null);
     window.SOM.state.start(spec, {
       view: window.SOM.entryView,
       hud: hud,
@@ -54,11 +55,8 @@ window.SOM = window.SOM || {};
        tools/ checks. */
     window.SOM.clock = window.SOM.timer.createTimer({
       seconds: spec.seconds,
-      onTick: function (secondsLeft) {
-        hud.setClock(secondsLeft);
-      },
+      onTick: function (secondsLeft) { /* hidden: nothing to display */ },
       onExpire: function () {
-        hud.setClock(0);
         window.SOM.state.stop();
       }
     });

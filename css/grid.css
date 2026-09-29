@@ -21,10 +21,13 @@
   flex: 0 0 5rem;
 }
 
-/* Left row-header column, right-aligned next to the separator. */
+/* Left row-header column, right-aligned next to the separator. Same type
+   size as the column headers so both edges read identically. */
 .cell.rowhead {
   border-right: 2px solid #1a1a1a;
   flex: 0 0 5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 /* Column headers and answer cells share their sizing so each header spans its
