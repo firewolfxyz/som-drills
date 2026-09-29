@@ -69,6 +69,8 @@ const sandbox = {
     getElementById: () => appRoot,
     addEventListener: (type, fn) => { handlers[type] = fn; }
   },
+  /* main.js reads location for the optional seed; the shim has no URL. */
+  location: { hash: "", search: "" },
   console: console
 };
 sandbox.window = sandbox;
@@ -104,7 +106,14 @@ const commit = () => press({ code: "Space", key: " " });
 const backspace = () => press({ code: "Backspace", key: "Backspace" });
 
 const state = sandbox.SOM.state;
-const ROWS = sandbox.SOM.stubSpec.rows.length;
+/* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
+   generates its own spec from the real catalogue entry (seeded, so reruns of
+   this file are reproducible). */
+const spec = sandbox.SOM.generate(sandbox.SOM.config.entries[0], {
+  rng: sandbox.SOM.random.seeded(20260815)
+});
+console.log("harness spec rows=" + JSON.stringify(spec.rows) + " cols=" + JSON.stringify(spec.cols));
+const ROWS = spec.rows.length;
 
 /* Always query live nodes: the grid is re-rendered partway through the run.
    DOM order is row-major; work order is column-major, so cells are placed into
@@ -252,9 +261,9 @@ check("expired timer will not restart", t.isRunning(), false);
 
 console.log("\n-- backspace: mid-cell removes one char --");
 /* Restart the drill for a clean backspace test. */
-sandbox.SOM.drillView.render(appRoot, sandbox.SOM.stubSpec);
+sandbox.SOM.drillView.render(appRoot, spec);
 sandbox.SOM.entryView.setup(appRoot.querySelector(".drill-grid"));
-sandbox.SOM.state.start(sandbox.SOM.stubSpec, {
+sandbox.SOM.state.start(spec, {
   view: sandbox.SOM.entryView,
   hud: sandbox.SOM.drillHud.setup(
     appRoot.querySelector(".hud-progress"),

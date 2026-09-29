@@ -1,5 +1,7 @@
-/* STUB (Phase 1 step 1): a hardcoded grid spec. Replaced in Phase 2 by
-   js/generators/, which produce the same shape from validated config.
+/* STUB (Phase 1 step 1): a hardcoded grid spec. NO LONGER LOADED BY
+   index.html — Phase 2 step D replaced it with js/generators/, which produce
+   the same shape from validated config. The file stays on disk for regression
+   tools only.
    Values are the reference `2 x 1 addition` grid in docs/generation.md
    (row walk start 12, columns 7 5 9 4 6) so later steps can verify against it. */
 
