@@ -171,8 +171,21 @@
     /* --- columns: never negative, never random-signed --- */
     let cols;
     if (options.columns === undefined) {
+      /* All column headers must be distinct: draw without replacement. */
+      const lo = Math.pow(10, entry.columns.digits - 1); /* e.g. 1 for 1-digit */
+      const hi = Math.pow(10, entry.columns.digits) - 1; /* e.g. 9 for 1-digit */
+      if (entry.columns.count > hi - lo + 1) {
+        throw new Error(
+          "generate: cannot produce " + entry.columns.count +
+          " distinct " + entry.columns.digits + "-digit column headers"
+        );
+      }
+      const used = {};
       cols = [];
-      for (let i = 0; i < entry.columns.count; i++) cols.push(randomHeader(rng, entry.columns.digits));
+      while (cols.length < entry.columns.count) {
+        const h = randomInt(rng, lo, hi);
+        if (!used[h]) { used[h] = true; cols.push(h); }
+      }
     } else {
       cols = validateColumns(entry, options.columns);
     }
