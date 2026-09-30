@@ -18,6 +18,29 @@
   margin: 0 0 0.75rem;
 }
 
+/* Entry-direction toggle: left-to-right (default) or right-to-left. */
+.picker-direction {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  color: #333;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 0 0 1rem;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  transition: background 0.1s;
+}
+
+.picker-direction[aria-pressed="true"] {
+  background: #fff3c4;
+  border-color: #b8860b;
+  color: #9a7209;
+}
+
 /* One header per operation; entries are grouped beneath it. */
 .picker-group-title {
   border-bottom: 2px solid #b8860b;

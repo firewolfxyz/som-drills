@@ -24,7 +24,7 @@ window.SOM = window.SOM || {};
     return match ? Number(match[1]) : null;
   }
 
-  function startDrill(index) {
+  function startDrill(index, options) {
     const entry = window.SOM.config.entries[index];
     if (entry === undefined) return; /* out-of-range: ignore, stay on picker */
     const seed = window.SOM.random.parseSeed(fragment);
@@ -51,7 +51,7 @@ window.SOM = window.SOM || {};
       },
       /* Time remaining at submit, read from the clock wired below. */
       secondsLeft: function () { return window.SOM.clock.secondsLeft(); }
-    });
+    }, options);
 
     /* Countdown from the spec's seconds; at zero the session submits whatever
        is filled in (docs/ui.md "Timing", phases.md Phase 3). Exposed for

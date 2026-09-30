@@ -22,12 +22,27 @@ window.SOM.pickerView = (function () {
   };
 
   /* Renders the list into container, grouped under one header per
-     operation. onPick(index) fires when an item is clicked; each item also
-     carries data-index for tools/ checks. */
+     operation. onPick(index, opts) fires when an item is clicked; opts.rtl is
+     true when right-to-left entry is toggled on. Each item also carries
+     data-index for tools/ checks. */
   function render(container, entries, onPick) {
     container.innerHTML = "";
     container.appendChild(el("h1", "app-title", "SPIRIT OF MATH DRILLER"));
     container.appendChild(el("h2", "picker-title", "choose a drill"));
+
+    /* Entry direction toggle: off = left-to-right (default), on = enter the
+        grid right to left (rightmost column first). */
+    let rtl = false;
+    const dirToggle = el("button", "picker-direction", "enter: left \u2192 right");
+    dirToggle.setAttribute("aria-pressed", "false");
+    dirToggle.addEventListener("click", function () {
+      rtl = !rtl;
+      dirToggle.textContent = rtl
+        ? "enter: right \u2192 left"
+        : "enter: left \u2192 right";
+      dirToggle.setAttribute("aria-pressed", String(rtl));
+    });
+    container.appendChild(dirToggle);
 
     /* Group entries by operator, keeping catalogue order inside each group. */
     const groups = [];
@@ -52,7 +67,7 @@ window.SOM.pickerView = (function () {
         li.dataset.index = String(item.index);
         li.appendChild(el("button", "picker-button", item.entry.name));
         li.querySelector("button").addEventListener("click", function () {
-          onPick(item.index);
+          onPick(item.index, { rtl: rtl });
         });
         list.appendChild(li);
       });
@@ -62,7 +77,7 @@ window.SOM.pickerView = (function () {
     /* Surprise me: pick a random catalogue entry. */
     const surprise = el("button", "picker-surprise", "surprise me");
     surprise.addEventListener("click", function () {
-      onPick(Math.floor(Math.random() * entries.length));
+      onPick(Math.floor(Math.random() * entries.length), { rtl: rtl });
     });
     container.appendChild(surprise);
   }

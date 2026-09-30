@@ -21,9 +21,12 @@ function makeNode(tag) {
       getProperty(name) { return this._props[name] || null; }
     },
     dataset: {},
+    _attrs: {},
     children: [],
     _text: "",
     _listeners: {},
+    setAttribute(name, value) { node._attrs[name] = String(value); },
+    getAttribute(name) { return node._attrs[name] === undefined ? null : node._attrs[name]; },
     appendChild(child) { node.children.push(child); return child; },
     addEventListener(type, fn) { (node._listeners[type] = node._listeners[type] || []).push(fn); },
     click() {
@@ -148,9 +151,37 @@ check("picker has one header per operation",
 /* Keys on the picker screen are refused: no session has started. */
 key("5");
 check("digit on picker starts no session", state.info().started, false);
+
+/* Entry-direction toggle: left-to-right is the default; clicking flips it.
+   The rest of this harness runs a left-to-right session, so it ends back off. */
+const dirToggle = appRoot.querySelector(".picker-direction");
+check("picker has an entry-direction toggle", !!dirToggle, true);
+check("direction defaults to left-to-right",
+  [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
+  ["enter: left \u2192 right", "false"]);
+dirToggle.click();
+check("toggle switches to right-to-left",
+  [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
+  ["enter: right \u2192 left", "true"]);
+dirToggle.click();
+check("toggle switches back to left-to-right", dirToggle._text,
+  "enter: left \u2192 right");
+
 /* Clicking an item starts that drill through main.js's wiring. */
 pickerItems[0].querySelector("button").click();
 check("picker click starts a session", state.info().started, true);
+
+/* Right-to-left entry maps work order onto mirrored columns: the first cell
+   is the top of the RIGHTMOST column (pure mapping in rules.displayIndex). */
+const R = 8, C = 5;
+check("displayIndex: left-to-right is the identity",
+  [0, 1, R, R + C].map((i) => sandbox.SOM.rules.displayIndex(i, R, C, false)),
+  [0, 1, R, R + C]);
+/* index 0 = col0 row0 -> col4 row0; 1 = col0 row1 -> col4 row1;
+   R = col1 row0 -> col3 row0; R+C = col1 row5 -> col3 row5. */
+check("displayIndex: right-to-left mirrors the column",
+  [0, 1, R, R + C].map((i) => sandbox.SOM.rules.displayIndex(i, R, C, true)),
+  [(C - 1) * R, (C - 1) * R + 1, (C - 2) * R, (C - 2) * R + 5]);
 
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of

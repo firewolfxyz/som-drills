@@ -13,10 +13,12 @@ window.SOM.state = (function () {
 
   let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
   let view, hud, resultView, secondsLeftFn, submitted, lastResult;
+  let rtl = false; /* right-to-left entry: work order starts at the rightmost column */
   let started = false; /* the picker screen runs before any session starts */
 
-  function start(specArg, views) {
+  function start(specArg, views, opts) {
     spec = specArg;
+    rtl = !!(opts && opts.rtl);
     rowCount = spec.rows.length;
     colCount = spec.cols.length;
     total = window.SOM.rules.cellCount(rowCount, colCount);
@@ -32,7 +34,7 @@ window.SOM.state = (function () {
     lastResult = null;
     started = true;
     cursor = 0;
-    view.highlight(cursor);
+    view.highlight(viewIndex(cursor));
     updateHud();
   }
 
@@ -44,8 +46,14 @@ window.SOM.state = (function () {
     return typed[cursor] === null ? "" : typed[cursor];
   }
 
+  /* Work-order index -> grid cell index. Right-to-left entry mirrors the
+     column; the work order itself (advance/back) is unchanged. */
+  function viewIndex(index) {
+    return window.SOM.rules.displayIndex(index, rowCount, colCount, rtl);
+  }
+
   function showCurrent() {
-    view.showText(cursor, currentText());
+    view.showText(viewIndex(cursor), currentText());
   }
 
   function onDigit(char) {
@@ -67,9 +75,9 @@ window.SOM.state = (function () {
       return true;
     }
     cursor = next;
-    view.highlight(cursor);
+    view.highlight(viewIndex(cursor));
     typed[cursor] = null; /* fresh cell starts empty */
-    view.clearCell(cursor);
+    view.clearCell(viewIndex(cursor));
     return true;
   }
 
@@ -83,7 +91,7 @@ window.SOM.state = (function () {
     const previous = window.SOM.rules.back(cursor, rowCount, colCount);
     if (previous === null) return true; /* already at the start */
     cursor = previous;
-    view.highlight(cursor);
+    view.highlight(viewIndex(cursor));
     if (filledFlags[cursor]) {
       filled -= 1;
       filledFlags[cursor] = false;
