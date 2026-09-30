@@ -134,9 +134,17 @@ console.log("\n-- picker screen --");
 const pickerItems = appRoot.querySelectorAll(".picker-item");
 check("picker lists every catalogue entry", pickerItems.length,
   sandbox.SOM.config.entries.length);
+/* Items are grouped under per-operation headers, so DOM order is not
+   catalogue order: sort by data-index before comparing names. */
 check("picker item names match the catalogue",
-  pickerItems.map((li) => li.querySelector("button")._text),
+  pickerItems
+    .slice()
+    .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+    .map((li) => li.querySelector("button")._text),
   sandbox.SOM.config.entries.map((e) => e.name));
+check("picker has one header per operation",
+  appRoot.querySelectorAll(".picker-group-title").length,
+  new Set(sandbox.SOM.config.entries.map((e) => e.operator)).size);
 /* Keys on the picker screen are refused: no session has started. */
 key("5");
 check("digit on picker starts no session", state.info().started, false);
