@@ -31,6 +31,13 @@ window.SOM.pickerView = (function () {
       list.appendChild(item);
     });
     container.appendChild(list);
+
+    /* Surprise me: pick a random catalogue entry. */
+    const surprise = el("button", "picker-surprise", "surprise me");
+    surprise.addEventListener("click", function () {
+      onPick(Math.floor(Math.random() * entries.length));
+    });
+    container.appendChild(surprise);
   }
 
   return { render: render };

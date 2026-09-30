@@ -16,15 +16,23 @@ window.SOM.drillView = (function () {
      only shown on the result screen (resultView). */
   function renderHud(container, spec) {
     const hud = el("header", "hud");
-    hud.appendChild(el("h1", "hud-name", spec.name));
+    /* Time progress bar: a thin track that shrinks as time runs out. It
+       carries no numbers — the exact time is only shown on the result
+       screen. Width is driven by drillHud.setTimeFraction. */
+    const timeBar = el("div", "time-bar");
+    timeBar.appendChild(el("div", "time-bar-fill"));
+    hud.appendChild(timeBar);
+    const row = el("div", "hud-row");
+    row.appendChild(el("h1", "hud-name", spec.name));
     const progress = el(
       "div",
       "hud-progress",
       "0/" + spec.rows.length * spec.cols.length
     );
-    hud.appendChild(progress);
+    row.appendChild(progress);
+    hud.appendChild(row);
     container.appendChild(hud);
-    return { progress: progress };
+    return { progress: progress, timeBar: timeBar };
   }
 
   /* The shared row template: one fixed row-header track plus one flexible

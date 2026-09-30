@@ -6,11 +6,17 @@
 window.SOM = window.SOM || {};
 
 window.SOM.drillHud = (function () {
-  function setup(progressEl, clockEl) {
+  function setup(progressEl, clockEl, timeBarEl) {
     return {
       /* filledCount is how many cells hold a committed entry. */
       setProgress: function (filledCount, total) {
         progressEl.textContent = filledCount + "/" + total;
+      },
+      /* fraction is 1 (full) down to 0 (empty); shrinks the bar fill. */
+      setTimeFraction: function (fraction) {
+        if (!timeBarEl) return;
+        const fill = timeBarEl.firstElementChild;
+        if (fill) fill.style.width = (Math.max(0, Math.min(1, fraction)) * 100) + "%";
       },
       /* Render whole seconds as m:ss, e.g. 277 -> "4:37". No-op when no
          clock element was rendered (the drill HUD hides time). */
