@@ -54,8 +54,10 @@ function makeNode(tag) {
     set(v) { node._class = v; }
   });
   Object.defineProperty(node, "textContent", {
-    get() { return node._text; },
-    set(v) { node._text = String(v); }
+    /* Mirrors the real DOM: setting replaces children with text; getting
+       concatenates this node's text with its descendants'. */
+    get() { return node._text + node.children.map((c) => c.textContent).join(""); },
+    set(v) { node._text = String(v); node.children = []; }
   });
   Object.defineProperty(node, "innerHTML", {
     set(v) { if (v === "") node.children = []; },
@@ -80,7 +82,15 @@ function makeNode(tag) {
 
 const appRoot = makeNode("main");
 const handlers = {};
+/* localStorage shim so the picker's persisted entry-mode choice works in
+   node (the app treats a missing/throwing storage as "no saved mode"). */
+const storageMap = {};
 const sandbox = {
+  localStorage: {
+    getItem(k) { return Object.prototype.hasOwnProperty.call(storageMap, k) ? storageMap[k] : null; },
+    setItem(k, v) { storageMap[k] = String(v); },
+    removeItem(k) { delete storageMap[k]; }
+  },
   document: {
     createElement: makeNode,
     getElementById: () => appRoot,
@@ -152,11 +162,12 @@ check("picker has one header per operation",
 key("5");
 check("digit on picker starts no session", state.info().started, false);
 
-/* Digit-direction toggle: left-to-right is the default; clicking flips it.
-   The rest of this harness runs a left-to-right session, so it ends back off. */
+/* Entry-mode toggle: cycles ltr -> rtl -> compute -> ltr, and persists the
+   choice in localStorage. The rest of this harness runs a left-to-right
+   session, so it ends back off. */
 const dirToggle = appRoot.querySelector(".picker-direction");
-check("picker has a digit-direction toggle", !!dirToggle, true);
-check("digit direction defaults to left-to-right",
+check("picker has an entry-mode toggle", !!dirToggle, true);
+check("entry mode defaults to left-to-right",
   [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
   ["digits: left \u2192 right", "false"]);
 dirToggle.click();
@@ -164,8 +175,14 @@ check("toggle switches to right-to-left",
   [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
   ["digits: right \u2192 left", "true"]);
 dirToggle.click();
-check("toggle switches back to left-to-right", dirToggle._text,
-  "digits: left \u2192 right");
+check("toggle switches to compute order",
+  [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
+  ["compute order", "true"]);
+dirToggle.click();
+check("toggle cycles back to left-to-right",
+  [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
+  ["digits: left \u2192 right", "false"]);
+check("mode choice persists in localStorage", storageMap["som-entry-mode"], "ltr");
 
 /* Clicking an item starts that drill through main.js's wiring. */
 pickerItems[0].querySelector("button").click();
@@ -198,6 +215,69 @@ check("rtl digits: typing 1,2,3 stores 321 in the cell",
   rtlGrid.children[0]._text, "321");
 rtlBox.SOM.state.handle("back");
 check("rtl digits: backspace removes the rightmost digit", rtlGrid.children[0]._text, "32");
+
+/* Compute entry: digits are typed in mental-math order (right to left, final
+   carry chunk last), displayed at their FINAL positions with a cursor marking
+   where the next digit goes. On completion the cell shows the REAL answer and
+   advances on its own; backspace undoes in typing order. */
+const cBox = { console: console, document: { createElement: makeNode } };
+cBox.window = cBox;
+vm.createContext(cBox);
+["js/rules.js", "js/state.js", "js/ui/entryView.js"].forEach(function (src) {
+  vm.runInContext(fs.readFileSync(path.join(root, src), "utf8"), cBox, { filename: src });
+});
+const cGrid = makeNode("div");
+for (let r = 0; r < 8; r++) for (let c = 0; c < 3; c++) {
+  const cell = makeNode("div");
+  cell.className = "cell answer";
+  cell.dataset.row = String(r);
+  cell.dataset.col = String(c);
+  cGrid.appendChild(cell);
+}
+cBox.SOM.entryView.setup(cGrid);
+/* Cells are appended row-major; work-order index i sits at row i%8, col
+   floor(i/8), i.e. children[(i % 8) * 3 + floor(i / 8)]. */
+const cCell = (i) => cGrid.children[(i % 8) * 3 + Math.floor(i / 8)];
+/* 9 x 3 = 27 (type 7, then chunk 2); 15 x 3 = 45 (type 5, then chunk 4). */
+cBox.SOM.state.start({
+  operator: "multiply",
+  rows: [9, 15],
+  cols: [3, 4, 5],
+  answers: [[27, 36, 45], [45, 60, 75]]
+}, {
+  view: cBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { compute: true });
+/* The cursor is a gold underline UNDER the next digit place: exactly one
+   slot span per cell carries the .slot-next class. */
+const cNext = (i) => cCell(i).children.findIndex(
+  (c) => c._class.split(/\s+/).indexOf("slot-next") !== -1);
+check("compute: empty cell marks its first-typed place (rightmost)",
+  [cCell(0).textContent, cNext(0)], ["  ", 1]);
+cBox.SOM.state.handle("digit", "7");
+check("compute: first digit lands rightmost, cursor steps left",
+  [cCell(0).textContent, cNext(0)], [" 7", 0]);
+cBox.SOM.state.handle("digit", "2");
+check("compute: complete buffer stores the REAL answer and auto-advances",
+  [cCell(0).textContent, cBox.SOM.state.info().cursor], ["27", 1]);
+check("compute: next cell starts fresh with its cursor",
+  [cCell(1).textContent, cNext(1)], ["  ", 1]);
+cBox.SOM.state.handle("digit", "5");
+check("compute: second cell mid-entry", [cCell(1).textContent, cNext(1)], [" 5", 0]);
+cBox.SOM.state.handle("back");
+check("compute: backspace undoes the last-typed digit",
+  [cCell(1).textContent, cBox.SOM.state.info().cursor], ["  ", 1]);
+/* Step back into a completed cell: its full typed buffer is restored, shown
+   as the real answer; one more backspace opens it for editing. */
+cBox.SOM.state.handle("back");
+check("compute: stepping back restores the completed cell",
+  cCell(0).textContent, "27");
+cBox.SOM.state.handle("back");
+check("compute: backspace reopens it mid-entry with the cursor",
+  [cCell(0).textContent, cNext(0)], [" 7", 0]);
+cBox.SOM.state.handle("digit", "2");
+check("compute: retyping the chunk completes it again",
+  [cCell(0)._text, cBox.SOM.state.info().cursor], ["27", 1]);
 
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of

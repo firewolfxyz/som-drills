@@ -88,11 +88,90 @@ window.SOM.rules = (function () {
     return { columns: columns, missed: missed, pace: pace, filled: filled };
   }
 
+  /* Compute-style entry (docs/model.md): the answer is typed from the RIGHT,
+     digit by digit, exactly as it falls out of mental arithmetic — the final
+     carry chunk stays in normal order at the end.
+
+     singles = how many individual digits are written before the final chunk:
+       add/subtract : max row digits - 1      (97+9=106 -> "610": write 6, then
+                                                the chunk "10"; 58+7=65 -> "56")
+       multiply     : leftDigits - 1          (338 x 5 = 1690 -> "0916": write
+                                                0, 9, then the chunk "16";
+                                                12 x 3 = 36 -> "63": write 6,
+                                                then the chunk "3")
+
+     computeEntry(answer, singles): reverse the last `singles` digits, keep
+     the leading chunk in normal order. Leading zeros are preserved — that is
+     the point of this mode.
+
+     computeEntry("1690", 2) -> "0916"
+     computeEntry("106",  1) -> "610"
+     computeEntry("36",   1) -> "63"
+     computeEntry("5",    1) -> "5"    (nothing left to reverse) */
+  function computeEntry(answer, singles) {
+    const s = String(answer);
+    if (singles <= 0 || singles >= s.length) return s;
+    /* The last `singles` digits are typed in reverse; the leading chunk is
+       typed in normal order. */
+    const tail = s.slice(-singles).split("").reverse().join("");
+    return tail + s.slice(0, -singles);
+  }
+
+  /* Live display for compute entry: places each typed digit where it will
+     finally sit in the answer, and reports where the NEXT digit goes.
+
+     The first `singles` typed digits land right-to-left; the rest fill the
+     leading chunk left-to-right. Untyped slots are spaces; pos is the index
+     of the next slot (null once the buffer is complete).
+
+     computeDisplay("1690", "09", 2) -> { text: "  90", pos: 0 }
+     computeDisplay("1690", "091", 2) -> { text: "1 90", pos: 1 }
+     computeDisplay("1690", "0916", 2) -> { text: "1690", pos: null } */
+  function computeDisplay(answer, buffer, singles) {
+    const s = String(answer);
+    const L = s.length;
+    const k = buffer.length;
+    const chars = new Array(L).fill(" ");
+    const nSingles = Math.min(k, singles);
+    for (let i = 0; i < nSingles; i++) chars[L - 1 - i] = buffer[i];
+    for (let i = nSingles; i < k; i++) chars[i - nSingles] = buffer[i];
+    let pos;
+    if (k >= L) pos = null; /* complete */
+    else if (k < singles) pos = L - 1 - k;
+    else pos = k - singles;
+    return { text: chars.join(""), pos: pos };
+  }
+
+  /* The `singles` count for a whole drill spec; null for operators that do
+     not use compute entry (division is always typed left to right). */
+  function headLenFor(spec) {
+    if (spec.operator === "add" || spec.operator === "subtract") {
+      let max = 0;
+      spec.rows.forEach(function (r) {
+        const d = String(Math.abs(r)).length;
+        if (d > max) max = d;
+      });
+      return Math.max(1, max - 1); /* only the last digit's sum is a chunk */
+    }
+    if (spec.operator === "multiply") {
+      let leftMax = 0;
+      spec.rows.forEach(function (r) {
+        const d = String(Math.abs(r)).length;
+        if (d > leftMax) leftMax = d;
+      });
+      return Math.max(1, leftMax - 1);
+    }
+    return null; /* divide: plain left-to-right entry */
+  }
+
   return {
     advance: advance,
     back: back,
     cellCount: cellCount,
     grade: grade,
-    summarize: summarize
+    summarize: summarize,
+    computeEntry: computeEntry,
+    computeDisplay: computeDisplay,
+    headLenFor: headLenFor
   };
 })();

@@ -39,6 +39,19 @@ window.SOM.entryView = (function () {
     cellAt(index).textContent = text;
   }
 
+  /* Compute mode: render each digit as its own slot span so the next digit
+     place can be marked with a cursor UNDER it (slots: [{ ch, next }]). */
+  function showSlots(index, slots) {
+    const cell = cellAt(index);
+    cell.textContent = ""; /* replaces any children */
+    slots.forEach(function (s) {
+      const span = document.createElement("span");
+      span.className = s.next ? "slot slot-next" : "slot";
+      span.textContent = s.ch;
+      cell.appendChild(span);
+    });
+  }
+
   function clearCell(index) {
     showText(index, "");
   }
@@ -48,6 +61,7 @@ window.SOM.entryView = (function () {
     cellAt: cellAt,
     highlight: highlight,
     showText: showText,
+    showSlots: showSlots,
     clearCell: clearCell
   };
 })();

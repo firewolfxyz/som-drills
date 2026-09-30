@@ -30,20 +30,38 @@ window.SOM.pickerView = (function () {
     container.appendChild(el("h1", "app-title", "SPIRIT OF MATH DRILLER"));
     container.appendChild(el("h2", "picker-title", "choose a drill"));
 
-    /* Digit-entry direction toggle: off = type digits left-to-right
-        (default), on = type them right-to-left, so the first digit typed
-        lands rightmost in the cell. The grid order is unaffected. */
-    let rtl = false;
-    const dirToggle = el("button", "picker-direction", "digits: left \u2192 right");
-    dirToggle.setAttribute("aria-pressed", "false");
+    /* Entry-mode toggle, cycling three modes:
+        ltr     - type digits left to right (default).
+        rtl     - type them right to left: the first digit lands rightmost.
+        compute - mental-math order: type the answer from the right, final
+                  carry chunk last (338 x 5 -> 0916). Division drills ignore
+                  it and stay left-to-right. The choice persists in
+                  localStorage so it sticks between sessions. */
+    const MODES = ["ltr", "rtl", "compute"];
+    const MODE_LABELS = {
+      ltr: "digits: left \u2192 right",
+      rtl: "digits: right \u2192 left",
+      compute: "compute order"
+    };
+    let mode = "ltr";
+    try {
+      const saved = window.localStorage.getItem("som-entry-mode");
+      if (MODES.indexOf(saved) !== -1) mode = saved;
+    } catch (e) { /* private mode: fall back to the default */ }
+    const dirToggle = el("button", "picker-direction", MODE_LABELS[mode]);
+    dirToggle.setAttribute("aria-pressed", String(mode !== "ltr"));
     dirToggle.addEventListener("click", function () {
-      rtl = !rtl;
-      dirToggle.textContent = rtl
-        ? "digits: right \u2192 left"
-        : "digits: left \u2192 right";
-      dirToggle.setAttribute("aria-pressed", String(rtl));
+      mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+      dirToggle.textContent = MODE_LABELS[mode];
+      dirToggle.setAttribute("aria-pressed", String(mode !== "ltr"));
+      try { window.localStorage.setItem("som-entry-mode", mode); }
+      catch (e) { /* private mode: the choice just does not persist */ }
     });
     container.appendChild(dirToggle);
+
+    function pickOpts() {
+      return { rtl: mode === "rtl", compute: mode === "compute" };
+    }
 
     /* Group entries by operator, keeping catalogue order inside each group. */
     const groups = [];
@@ -80,7 +98,7 @@ window.SOM.pickerView = (function () {
         }
         li.appendChild(button);
         button.addEventListener("click", function () {
-          onPick(item.index, { rtl: rtl });
+          onPick(item.index, pickOpts());
         });
         list.appendChild(li);
       });
@@ -90,7 +108,7 @@ window.SOM.pickerView = (function () {
     /* Surprise me: pick a random catalogue entry. */
     const surprise = el("button", "picker-surprise", "surprise me");
     surprise.addEventListener("click", function () {
-      onPick(Math.floor(Math.random() * entries.length), { rtl: rtl });
+      onPick(Math.floor(Math.random() * entries.length), pickOpts());
     });
     container.appendChild(surprise);
   }

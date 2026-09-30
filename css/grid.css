@@ -57,6 +57,18 @@
   min-height: 3rem;
 }
 
+/* Compute entry: each digit is its own slot span so the next digit place can
+   be marked with a cursor UNDER it (a gold underline on that slot). */
+.cell .slot {
+  display: inline-block;
+  min-width: 1ch;
+  text-align: center;
+}
+
+.cell .slot-next {
+  border-bottom: 3px solid #b8860b;
+}
+
 /* Active cell highlight. Styled here, applied by the input logic in step 2. */
 .cell.answer.is-active {
   background: #fff3c4;

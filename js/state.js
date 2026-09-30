@@ -13,15 +13,31 @@ window.SOM.state = (function () {
 
   let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
   let view, hud, resultView, secondsLeftFn, submitted, lastResult;
-  /* Right-to-left digit entry: each typed digit lands on the LEFT of what is
-     already in the cell, so the first digit typed ends up rightmost. The grid
-     work order (column-major, left to right) is unchanged. */
-  let rtl = false;
+  /* Entry modes (picker toggle):
+       ltr     - default: digits append left to right.
+       rtl     - each typed digit lands on the LEFT of what is in the cell,
+                 so the first digit typed ends up rightmost.
+       compute - mental-math order: type the answer from the right, the final
+                 carry chunk last in normal order (338 x 5 -> type 0916).
+                 When the buffer matches the cell's computed entry string the
+                 cell displays the REAL answer and advances automatically.
+                 Division drills have no compute mode (headLen null) and fall
+                 back to plain left-to-right. */
+  let mode = "ltr";
+  let headLen = 0;
   let started = false; /* the picker screen runs before any session starts */
 
   function start(specArg, views, opts) {
     spec = specArg;
-    rtl = !!(opts && opts.rtl);
+    headLen = window.SOM.rules.headLenFor(specArg);
+    const o = opts || {};
+    if (o.rtl) {
+      mode = "rtl";
+    } else if (o.compute && headLen !== null) {
+      mode = "compute";
+    } else {
+      mode = "ltr"; /* division in compute mode falls back to plain ltr */
+    }
     rowCount = spec.rows.length;
     colCount = spec.cols.length;
     total = window.SOM.rules.cellCount(rowCount, colCount);
@@ -38,6 +54,7 @@ window.SOM.state = (function () {
     started = true;
     cursor = 0;
     view.highlight(cursor);
+    showCurrent(); /* compute mode shows the entry cursor in the first cell */
     updateHud();
   }
 
@@ -49,15 +66,51 @@ window.SOM.state = (function () {
     return typed[cursor] === null ? "" : typed[cursor];
   }
 
+  /* Live cell content. In compute mode the typed buffer is laid out at its
+     FINAL digit positions and a cursor sits UNDER the next digit place;
+     the stored text is only ever the real answer (set on auto-advance). */
+  function renderCell(index) {
+    const t = typed[index];
+    if (mode !== "compute") {
+      view.showText(index, t === null ? "" : t);
+      return;
+    }
+    const answer = String(spec.answers[index % rowCount][Math.floor(index / rowCount)]);
+    if (t === answer) { view.showText(index, answer); return; } /* complete */
+    const d = window.SOM.rules.computeDisplay(answer, t === null ? "" : t, headLen);
+    const slots = [];
+    for (let i = 0; i < d.text.length; i++) {
+      slots.push({ ch: d.text[i] || " ", next: d.pos === i });
+    }
+    view.showSlots(index, slots);
+  }
+
   function showCurrent() {
-    view.showText(cursor, currentText());
+    renderCell(cursor);
   }
 
   function onDigit(char) {
     if (currentText().length >= MAX_CHARS) return true;
+    if (mode === "compute") {
+      /* Digits append in mental-math order. The buffer is stored as typed
+         and displayed at its final positions with a cursor; when it equals
+         this cell's computed entry string the REAL answer is stored and the
+         cell advances automatically (no Enter needed). */
+      const buffer = currentText() + char;
+      const answer = String(spec.answers[cursor % rowCount][Math.floor(cursor / rowCount)]);
+      if (buffer === window.SOM.rules.computeEntry(answer, headLen)) {
+        typed[cursor] = answer; /* display the real answer, grade as correct */
+        showCurrent();
+        onCommit();
+      } else {
+        typed[cursor] = buffer;
+        showCurrent();
+      }
+      return true;
+    }
     /* Left-to-right: the digit appends. Right-to-left: it lands on the left,
        so the first digit typed sits rightmost in the cell. */
-    typed[cursor] = rtl ? char + currentText() : currentText() + char;
+    typed[cursor] = mode === "rtl" ? char + currentText() : currentText() + char;
     showCurrent();
     return true;
   }
@@ -76,7 +129,7 @@ window.SOM.state = (function () {
     cursor = next;
     view.highlight(cursor);
     typed[cursor] = null; /* fresh cell starts empty */
-    view.clearCell(cursor);
+    showCurrent(); /* compute mode shows the entry cursor in a fresh cell */
     return true;
   }
 
@@ -95,6 +148,15 @@ window.SOM.state = (function () {
       filled -= 1;
       filledFlags[cursor] = false;
       updateHud();
+    }
+    /* Compute mode: a completed cell stores the REAL answer; reopening it
+       for editing means restoring its typed buffer. */
+    if (mode === "compute") {
+      const t = typed[previous];
+      const answer = String(spec.answers[previous % rowCount][Math.floor(previous / rowCount)]);
+      if (t !== null && t === answer) {
+        typed[previous] = window.SOM.rules.computeEntry(answer, headLen);
+      }
     }
     showCurrent(); /* restore the saved text so it can be edited again */
     return true;
