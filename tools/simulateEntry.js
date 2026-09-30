@@ -143,7 +143,7 @@ check("picker item names match the catalogue",
   pickerItems
     .slice()
     .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
-    .map((li) => li.querySelector("button")._text),
+    .map((li) => li.querySelector(".picker-name")._text),
   sandbox.SOM.config.entries.map((e) => e.name));
 check("picker has one header per operation",
   appRoot.querySelectorAll(".picker-group-title").length,
@@ -152,36 +152,52 @@ check("picker has one header per operation",
 key("5");
 check("digit on picker starts no session", state.info().started, false);
 
-/* Entry-direction toggle: left-to-right is the default; clicking flips it.
+/* Digit-direction toggle: left-to-right is the default; clicking flips it.
    The rest of this harness runs a left-to-right session, so it ends back off. */
 const dirToggle = appRoot.querySelector(".picker-direction");
-check("picker has an entry-direction toggle", !!dirToggle, true);
-check("direction defaults to left-to-right",
+check("picker has a digit-direction toggle", !!dirToggle, true);
+check("digit direction defaults to left-to-right",
   [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
-  ["enter: left \u2192 right", "false"]);
+  ["digits: left \u2192 right", "false"]);
 dirToggle.click();
 check("toggle switches to right-to-left",
   [dirToggle._text, dirToggle.getAttribute("aria-pressed")],
-  ["enter: right \u2192 left", "true"]);
+  ["digits: right \u2192 left", "true"]);
 dirToggle.click();
 check("toggle switches back to left-to-right", dirToggle._text,
-  "enter: left \u2192 right");
+  "digits: left \u2192 right");
 
 /* Clicking an item starts that drill through main.js's wiring. */
 pickerItems[0].querySelector("button").click();
 check("picker click starts a session", state.info().started, true);
 
-/* Right-to-left entry maps work order onto mirrored columns: the first cell
-   is the top of the RIGHTMOST column (pure mapping in rules.displayIndex). */
-const R = 8, C = 5;
-check("displayIndex: left-to-right is the identity",
-  [0, 1, R, R + C].map((i) => sandbox.SOM.rules.displayIndex(i, R, C, false)),
-  [0, 1, R, R + C]);
-/* index 0 = col0 row0 -> col4 row0; 1 = col0 row1 -> col4 row1;
-   R = col1 row0 -> col3 row0; R+C = col1 row5 -> col3 row5. */
-check("displayIndex: right-to-left mirrors the column",
-  [0, 1, R, R + C].map((i) => sandbox.SOM.rules.displayIndex(i, R, C, true)),
-  [(C - 1) * R, (C - 1) * R + 1, (C - 2) * R, (C - 2) * R + 5]);
+/* Right-to-left digit entry: each typed digit lands on the LEFT of what is
+   already in the cell, so typing 1, 2, 3 yields "321". The grid work order
+   (column-major, left to right) is unaffected. */
+const rtlBox = { console: console, document: { createElement: makeNode } };
+rtlBox.window = rtlBox;
+vm.createContext(rtlBox);
+["js/rules.js", "js/state.js", "js/ui/entryView.js"].forEach(function (src) {
+  vm.runInContext(fs.readFileSync(path.join(root, src), "utf8"), rtlBox, { filename: src });
+});
+const rtlGrid = makeNode("div");
+for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+  const cell = makeNode("div");
+  cell.className = "cell answer";
+  cell.dataset.row = String(r);
+  cell.dataset.col = String(c);
+  rtlGrid.appendChild(cell);
+}
+rtlBox.SOM.entryView.setup(rtlGrid);
+rtlBox.SOM.state.start({ rows: [1, 2], cols: [3, 4, 5] }, {
+  view: rtlBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { rtl: true });
+["1", "2", "3"].forEach((d) => rtlBox.SOM.state.handle("digit", d));
+check("rtl digits: typing 1,2,3 stores 321 in the cell",
+  rtlGrid.children[0]._text, "321");
+rtlBox.SOM.state.handle("back");
+check("rtl digits: backspace removes the rightmost digit", rtlGrid.children[0]._text, "32");
 
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of

@@ -33,17 +33,6 @@ window.SOM.rules = (function () {
     return rowCount * colCount;
   }
 
-  /* Display index for a work-order index. Left-to-right (rtl false) the
-     mapping is the identity; right-to-left mirrors the column so work order
-     starts at the RIGHTMOST column and moves left. Rows within a column are
-     always top to bottom. */
-  function displayIndex(index, rowCount, colCount, rtl) {
-    if (!rtl) return index;
-    const row = index % rowCount;
-    const col = Math.floor(index / rowCount);
-    return (colCount - 1 - col) * rowCount + row;
-  }
-
   /* Grade every cell in one pass (docs/phases.md Phase 3). texts is indexed by
      work-order index (index = col * rowCount + row); a null/empty entry grades
      as incorrect. A cell is correct iff its text equals the expected answer
@@ -103,7 +92,6 @@ window.SOM.rules = (function () {
     advance: advance,
     back: back,
     cellCount: cellCount,
-    displayIndex: displayIndex,
     grade: grade,
     summarize: summarize
   };

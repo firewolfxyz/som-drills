@@ -30,16 +30,17 @@ window.SOM.pickerView = (function () {
     container.appendChild(el("h1", "app-title", "SPIRIT OF MATH DRILLER"));
     container.appendChild(el("h2", "picker-title", "choose a drill"));
 
-    /* Entry direction toggle: off = left-to-right (default), on = enter the
-        grid right to left (rightmost column first). */
+    /* Digit-entry direction toggle: off = type digits left-to-right
+        (default), on = type them right-to-left, so the first digit typed
+        lands rightmost in the cell. The grid order is unaffected. */
     let rtl = false;
-    const dirToggle = el("button", "picker-direction", "enter: left \u2192 right");
+    const dirToggle = el("button", "picker-direction", "digits: left \u2192 right");
     dirToggle.setAttribute("aria-pressed", "false");
     dirToggle.addEventListener("click", function () {
       rtl = !rtl;
       dirToggle.textContent = rtl
-        ? "enter: right \u2192 left"
-        : "enter: left \u2192 right";
+        ? "digits: right \u2192 left"
+        : "digits: left \u2192 right";
       dirToggle.setAttribute("aria-pressed", String(rtl));
     });
     container.appendChild(dirToggle);
@@ -65,8 +66,20 @@ window.SOM.pickerView = (function () {
       group.items.forEach(function (item) {
         const li = el("li", "picker-item");
         li.dataset.index = String(item.index);
-        li.appendChild(el("button", "picker-button", item.entry.name));
-        li.querySelector("button").addEventListener("click", function () {
+        const button = el("button", "picker-button");
+        button.appendChild(el("span", "picker-name", item.entry.name));
+        /* Best run so far for this drill, if any (localStorage history). */
+        const best = window.SOM.history
+          ? window.SOM.history.bestFor(item.entry.name)
+          : null;
+        if (best) {
+          button.appendChild(el(
+            "span", "picker-best",
+            "best " + best.correct + "/" + best.total
+          ));
+        }
+        li.appendChild(button);
+        button.addEventListener("click", function () {
           onPick(item.index, { rtl: rtl });
         });
         list.appendChild(li);

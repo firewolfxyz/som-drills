@@ -45,6 +45,15 @@ window.SOM = window.SOM || {};
          thing: hide it once the result is up. */
       result: {
         show: function (result) {
+          /* Persist the run before revealing it; a new best earns a badge. */
+          const stored = window.SOM.history.record(
+            result.spec.name,
+            result.correct,
+            result.spec.rows.length * result.spec.cols.length,
+            result.secondsLeft
+          );
+          result.newBest = stored.isBest;
+          result.best = stored.best;
           window.SOM.resultView.show(app, result);
           window.SOM.keypadView.hide(keypadEl);
         }

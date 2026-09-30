@@ -19,6 +19,18 @@
   font-size: 1.125rem;
 }
 
+/* New-best badge in the summary line (set by js/history.js via main.js). */
+.result-best {
+  background: #b8860b;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.6rem;
+  text-transform: uppercase;
+}
+
 /* Phase 4 session summary (rules.summarize, rendered by resultView). */
 
 .session-title {

@@ -35,6 +35,10 @@ window.SOM.resultView = (function () {
       el("span", "result-stat", result.correct + "/" + (rowCount * spec.cols.length) + " correct")
     );
     summary.appendChild(el("span", "result-stat", result.secondsLeft + "s left"));
+    /* New best for this drill (persisted by js/history.js via main.js). */
+    if (result.newBest) {
+      summary.appendChild(el("span", "result-best", "new best!"));
+    }
     container.appendChild(summary);
 
     /* Session summary: missed cells and pace (per-column correct counts

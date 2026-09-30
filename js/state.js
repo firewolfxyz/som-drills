@@ -13,7 +13,10 @@ window.SOM.state = (function () {
 
   let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
   let view, hud, resultView, secondsLeftFn, submitted, lastResult;
-  let rtl = false; /* right-to-left entry: work order starts at the rightmost column */
+  /* Right-to-left digit entry: each typed digit lands on the LEFT of what is
+     already in the cell, so the first digit typed ends up rightmost. The grid
+     work order (column-major, left to right) is unchanged. */
+  let rtl = false;
   let started = false; /* the picker screen runs before any session starts */
 
   function start(specArg, views, opts) {
@@ -34,7 +37,7 @@ window.SOM.state = (function () {
     lastResult = null;
     started = true;
     cursor = 0;
-    view.highlight(viewIndex(cursor));
+    view.highlight(cursor);
     updateHud();
   }
 
@@ -46,19 +49,15 @@ window.SOM.state = (function () {
     return typed[cursor] === null ? "" : typed[cursor];
   }
 
-  /* Work-order index -> grid cell index. Right-to-left entry mirrors the
-     column; the work order itself (advance/back) is unchanged. */
-  function viewIndex(index) {
-    return window.SOM.rules.displayIndex(index, rowCount, colCount, rtl);
-  }
-
   function showCurrent() {
-    view.showText(viewIndex(cursor), currentText());
+    view.showText(cursor, currentText());
   }
 
   function onDigit(char) {
     if (currentText().length >= MAX_CHARS) return true;
-    typed[cursor] = currentText() + char;
+    /* Left-to-right: the digit appends. Right-to-left: it lands on the left,
+       so the first digit typed sits rightmost in the cell. */
+    typed[cursor] = rtl ? char + currentText() : currentText() + char;
     showCurrent();
     return true;
   }
@@ -75,9 +74,9 @@ window.SOM.state = (function () {
       return true;
     }
     cursor = next;
-    view.highlight(viewIndex(cursor));
+    view.highlight(cursor);
     typed[cursor] = null; /* fresh cell starts empty */
-    view.clearCell(viewIndex(cursor));
+    view.clearCell(cursor);
     return true;
   }
 
@@ -91,7 +90,7 @@ window.SOM.state = (function () {
     const previous = window.SOM.rules.back(cursor, rowCount, colCount);
     if (previous === null) return true; /* already at the start */
     cursor = previous;
-    view.highlight(viewIndex(cursor));
+    view.highlight(cursor);
     if (filledFlags[cursor]) {
       filled -= 1;
       filledFlags[cursor] = false;
