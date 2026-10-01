@@ -17,12 +17,15 @@ window.SOM.keys = (function () {
 
     if (COMMIT_CODES.indexOf(code) !== -1) return { action: "commit", char: null };
     if (code === "Backspace") return { action: "back", char: null };
+    if (code === "NumpadSubtract" || code === "Minus")
+      return { action: "minus", char: null };
 
     // event.key fallback: laptops report differing codes for some keyboards.
     if (/^[0-9]$/.test(event.key)) return { action: "digit", char: event.key };
     if (event.key === "Enter" || event.key === " ")
       return { action: "commit", char: null };
     if (event.key === "Backspace") return { action: "back", char: null };
+    if (event.key === "-") return { action: "minus", char: null };
 
     return { action: "ignore", char: null };
   }

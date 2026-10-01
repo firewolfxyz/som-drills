@@ -124,11 +124,14 @@ window.SOM.rules = (function () {
      leading chunk left-to-right. Untyped slots are spaces; pos is the index
      of the next slot (null once the buffer is complete).
 
-     computeDisplay("1690", "09", 2) -> { text: "  90", pos: 0 }
-     computeDisplay("1690", "091", 2) -> { text: "1 90", pos: 1 }
-     computeDisplay("1690", "0916", 2) -> { text: "1690", pos: null } */
-  function computeDisplay(answer, buffer, singles) {
-    const s = String(answer);
+     When negative is true a "-" is prepended and all positions shift by 1.
+
+     computeDisplay("1690", "09", 2)        -> { text: "  90", pos: 0 }
+     computeDisplay("1690", "091", 2)       -> { text: "1 90", pos: 1 }
+     computeDisplay("1690", "0916", 2)      -> { text: "1690", pos: null }
+     computeDisplay("-1690", "09", 2, true) -> { text: "   90", pos: 1 } */
+  function computeDisplay(answer, buffer, singles, negative) {
+    const s = String(Math.abs(Number(answer)));
     const L = s.length;
     const k = buffer.length;
     const chars = new Array(L).fill(" ");
@@ -139,6 +142,10 @@ window.SOM.rules = (function () {
     if (k >= L) pos = null; /* complete */
     else if (k < singles) pos = L - 1 - k;
     else pos = k - singles;
+    if (negative) {
+      chars.unshift("-");
+      if (pos !== null) pos += 1;
+    }
     return { text: chars.join(""), pos: pos };
   }
 

@@ -39,8 +39,8 @@ window.SOM.entryView = (function () {
     cellAt(index).textContent = text;
   }
 
-  /* Compute mode: render each digit as its own slot span so the next digit
-     place can be marked with a cursor UNDER it (slots: [{ ch, next }]). */
+  /* Compute mode: render each digit as its own slot span; the next (empty)
+     slot gets .slot-next for the gold background highlight. */
   function showSlots(index, slots) {
     const cell = cellAt(index);
     cell.textContent = ""; /* replaces any children */

@@ -75,6 +75,14 @@ check("display 36 complete", D("36", "63", 1), { text: "36", pos: null });
 check("display 5 empty", D("5", "", 1), { text: " ", pos: 0 });
 check("display 5 complete", D("5", "5", 1), { text: "5", pos: null });
 
+/* Negative answers: the sign is a toggle prefix, not part of the typed
+   buffer. computeDisplay takes a 4th `negative` flag. */
+check("display neg empty", D("-1690", "", 2, true), { text: "-    ", pos: 4 });
+check("display neg after 0", D("-1690", "0", 2, true), { text: "-   0", pos: 3 });
+check("display neg after 09", D("-1690", "09", 2, true), { text: "-  90", pos: 1 });
+check("display neg after 091", D("-1690", "091", 2, true), { text: "-1 90", pos: 2 });
+check("display neg complete", D("-1690", "0916", 2, true), { text: "-1690", pos: null });
+
 /* --- headLenFor: the `singles` count per drill spec --- */
 
 /* add/subtract: max row digits - 1 (the last digit's sum is the chunk). */

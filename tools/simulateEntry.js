@@ -67,6 +67,17 @@ function makeNode(tag) {
     get() {
       return {
         contains(c) { return node._class.split(/\s+/).indexOf(c) !== -1; },
+        add(c) {
+          const parts = node._class.split(/\s+/).filter(Boolean);
+          if (parts.indexOf(c) === -1) parts.push(c);
+          node._class = parts.join(" ");
+        },
+        remove(c) {
+          const parts = node._class.split(/\s+/).filter(Boolean);
+          const at = parts.indexOf(c);
+          if (at !== -1) parts.splice(at, 1);
+          node._class = parts.join(" ");
+        },
         toggle(c, on) {
           const parts = node._class.split(/\s+/).filter(Boolean);
           const at = parts.indexOf(c);
@@ -248,8 +259,7 @@ cBox.SOM.state.start({
   view: cBox.SOM.entryView,
   hud: { setProgress() {}, setTimeFraction() {} }
 }, { compute: true });
-/* The cursor is a gold underline UNDER the next digit place: exactly one
-   slot span per cell carries the .slot-next class. */
+/* The next digit place is the slot span carrying .slot-next (gold bg). */
 const cNext = (i) => cCell(i).children.findIndex(
   (c) => c._class.split(/\s+/).indexOf("slot-next") !== -1);
 check("compute: empty cell marks its first-typed place (rightmost)",
@@ -278,6 +288,26 @@ check("compute: backspace reopens it mid-entry with the cursor",
 cBox.SOM.state.handle("digit", "2");
 check("compute: retyping the chunk completes it again",
   [cCell(0)._text, cBox.SOM.state.info().cursor], ["27", 1]);
+
+/* Minus-sign toggle in compute mode: pressing - on an empty cell shows the
+   sign prefix; pressing it again removes it. Backspace on an empty signed
+   cell un-toggles the sign before stepping back. */
+cBox.SOM.state.handle("minus");
+check("compute: minus toggles sign on empty cell",
+  cCell(1).textContent.charAt(0), "-");
+cBox.SOM.state.handle("digit", "5");
+check("compute: digit lands rightmost with sign shown",
+  [cCell(1).textContent, cNext(1)], ["- 5", 1]);
+cBox.SOM.state.handle("back");
+check("compute: backspace removes the digit, sign stays",
+  [cCell(1).textContent, cNext(1)], ["-  ", 2]);
+cBox.SOM.state.handle("back");
+check("compute: backspace on empty signed cell un-toggles sign",
+  cCell(1).textContent.charAt(0) !== "-", true);
+cBox.SOM.state.handle("minus");
+cBox.SOM.state.handle("minus");
+check("compute: double minus toggles off",
+  cCell(1).textContent.charAt(0) !== "-", true);
 
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of

@@ -11,7 +11,7 @@ window.SOM = window.SOM || {};
 window.SOM.state = (function () {
   const MAX_CHARS = 6; /* cap typed length; extra digits are ignored */
 
-  let spec, rowCount, colCount, total, typed, filledFlags, cursor, filled, done;
+  let spec, rowCount, colCount, total, typed, filledFlags, negFlags, cursor, filled, done;
   let view, hud, resultView, secondsLeftFn, submitted, lastResult;
   /* Entry modes (picker toggle):
        ltr     - default: digits append left to right.
@@ -43,6 +43,7 @@ window.SOM.state = (function () {
     total = window.SOM.rules.cellCount(rowCount, colCount);
     typed = new Array(total).fill(null);
     filledFlags = new Array(total).fill(false);
+    negFlags = new Array(total).fill(false);
     view = views.view;
     hud = views.hud;
     resultView = views.result || null;
@@ -77,7 +78,7 @@ window.SOM.state = (function () {
     }
     const answer = String(spec.answers[index % rowCount][Math.floor(index / rowCount)]);
     if (t === answer) { view.showText(index, answer); return; } /* complete */
-    const d = window.SOM.rules.computeDisplay(answer, t === null ? "" : t, headLen);
+    const d = window.SOM.rules.computeDisplay(answer, t === null ? "" : t, headLen, negFlags[index]);
     const slots = [];
     for (let i = 0; i < d.text.length; i++) {
       slots.push({ ch: d.text[i] || " ", next: d.pos === i });
@@ -97,9 +98,10 @@ window.SOM.state = (function () {
          this cell's computed entry string the REAL answer is stored and the
          cell advances automatically (no Enter needed). */
       const buffer = currentText() + char;
-      const answer = String(spec.answers[cursor % rowCount][Math.floor(cursor / rowCount)]);
-      if (buffer === window.SOM.rules.computeEntry(answer, headLen)) {
-        typed[cursor] = answer; /* display the real answer, grade as correct */
+      const rawAnswer = String(spec.answers[cursor % rowCount][Math.floor(cursor / rowCount)]);
+      const absAnswer = String(Math.abs(Number(rawAnswer)));
+      if (buffer === window.SOM.rules.computeEntry(absAnswer, headLen)) {
+        typed[cursor] = negFlags[cursor] ? "-" + absAnswer : absAnswer;
         showCurrent();
         onCommit();
       } else {
@@ -134,6 +136,12 @@ window.SOM.state = (function () {
   }
 
   function onBack() {
+    if (mode === "compute" && negFlags[cursor] && currentText() === "") {
+      /* Empty cell with sign toggled: un-toggle the sign first. */
+      negFlags[cursor] = false;
+      showCurrent();
+      return true;
+    }
     if (currentText().length > 0) {
       /* Mid-entry: remove one character only. */
       typed[cursor] = currentText().slice(0, -1);
@@ -155,7 +163,8 @@ window.SOM.state = (function () {
       const t = typed[previous];
       const answer = String(spec.answers[previous % rowCount][Math.floor(previous / rowCount)]);
       if (t !== null && t === answer) {
-        typed[previous] = window.SOM.rules.computeEntry(answer, headLen);
+        negFlags[previous] = answer.charAt(0) === "-";
+        typed[previous] = window.SOM.rules.computeEntry(String(Math.abs(Number(answer))), headLen);
       }
     }
     showCurrent(); /* restore the saved text so it can be edited again */
@@ -199,6 +208,11 @@ window.SOM.state = (function () {
     if (action === "digit") return onDigit(char);
     if (action === "commit") return onCommit();
     if (action === "back") return onBack();
+    if (action === "minus" && mode === "compute") {
+      negFlags[cursor] = !negFlags[cursor];
+      showCurrent();
+      return true;
+    }
     return false;
   }
 
