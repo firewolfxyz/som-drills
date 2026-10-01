@@ -25,6 +25,8 @@ window.SOM.state = (function () {
                  back to plain left-to-right. */
   let mode = "ltr";
   let headLen = 0;
+  let auto = false; /* commit a cell as soon as it holds as many characters
+                       as its answer (no Enter needed) */
   let started = false; /* the picker screen runs before any session starts */
 
   function start(specArg, views, opts) {
@@ -38,6 +40,7 @@ window.SOM.state = (function () {
     } else {
       mode = "ltr"; /* division in compute mode falls back to plain ltr */
     }
+    auto = !!o.auto;
     rowCount = spec.rows.length;
     colCount = spec.cols.length;
     total = window.SOM.rules.cellCount(rowCount, colCount);
@@ -90,6 +93,12 @@ window.SOM.state = (function () {
     renderCell(cursor);
   }
 
+  /* Length of this cell's expected answer, including a sign for negative
+     answers. Only read for the auto-advance option — never for grading. */
+  function answerLength(index) {
+    return String(spec.answers[index % rowCount][Math.floor(index / rowCount)]).length;
+  }
+
   function onDigit(char) {
     if (currentText().length >= MAX_CHARS) return true;
     if (mode === "compute") {
@@ -114,6 +123,8 @@ window.SOM.state = (function () {
        so the first digit typed sits rightmost in the cell. */
     typed[cursor] = mode === "rtl" ? char + currentText() : currentText() + char;
     showCurrent();
+    /* Auto-advance: a full-length cell commits itself, no Enter needed. */
+    if (auto && currentText().length === answerLength(cursor)) onCommit();
     return true;
   }
 
@@ -208,8 +219,16 @@ window.SOM.state = (function () {
     if (action === "digit") return onDigit(char);
     if (action === "commit") return onCommit();
     if (action === "back") return onBack();
-    if (action === "minus" && mode === "compute") {
-      negFlags[cursor] = !negFlags[cursor];
+    if (action === "minus") {
+      if (mode === "compute") {
+        negFlags[cursor] = !negFlags[cursor];
+      } else {
+        /* Plain modes: toggle a "-" prefix in the typed text. */
+        const t = currentText();
+        typed[cursor] = t.charAt(0) === "-"
+          ? t.slice(1)
+          : "-" + t;
+      }
       showCurrent();
       return true;
     }

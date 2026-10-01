@@ -309,6 +309,59 @@ cBox.SOM.state.handle("minus");
 check("compute: double minus toggles off",
   cCell(1).textContent.charAt(0) !== "-", true);
 
+/* Auto-advance option: with auto on, a cell commits itself once it holds as
+   many characters as its answer — no Enter needed. */
+const aBox = { console: console, document: { createElement: makeNode } };
+aBox.window = aBox;
+vm.createContext(aBox);
+["js/rules.js", "js/state.js", "js/ui/entryView.js"].forEach(function (src) {
+  vm.runInContext(fs.readFileSync(path.join(root, src), "utf8"), aBox, { filename: src });
+});
+const aGrid = makeNode("div");
+for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+  const cell = makeNode("div");
+  cell.className = "cell answer";
+  cell.dataset.row = String(r);
+  cell.dataset.col = String(c);
+  aGrid.appendChild(cell);
+}
+aBox.SOM.entryView.setup(aGrid);
+aBox.SOM.state.start({
+  operator: "add",
+  rows: [12, 34],
+  cols: [1, 2, 3],
+  answers: [[13, 14, 15], [35, 36, 37]]
+}, {
+  view: aBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { auto: true });
+const aCell = (i) => aGrid.children[(i % 2) * 3 + Math.floor(i / 2)];
+aBox.SOM.state.handle("digit", "1");
+check("auto: short cell does not advance",
+  [aCell(0)._text, aBox.SOM.state.info().cursor], ["1", 0]);
+aBox.SOM.state.handle("digit", "3");
+check("auto: full-length cell commits itself and advances",
+  [aCell(0)._text, aBox.SOM.state.info().cursor, aBox.SOM.state.info().filled],
+  ["13", 1, 1]);
+
+/* Minus in plain (non-compute) modes: toggles a "-" prefix in the text.
+   Fresh plain session (auto off) so the cursor stays put. */
+aBox.SOM.state.start({
+  operator: "subtract",
+  rows: [12, 34],
+  cols: [1, 2, 3],
+  answers: [[11, 10, 9], [33, 32, 31]]
+}, {
+  view: aBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+});
+aBox.SOM.state.handle("minus");
+check("plain minus: prefixes the cell", aCell(0)._text, "-");
+aBox.SOM.state.handle("digit", "5");
+check("plain minus: digits append after the sign", aCell(0)._text, "-5");
+aBox.SOM.state.handle("minus");
+check("plain minus: toggles off", aCell(0)._text, "5");
+
 /* Phase 2 step D: index.html no longer loads js/stubSpec.js; the harness
    generates its own spec from the real catalogue entry (seeded, so reruns of
    this file are reproducible). */

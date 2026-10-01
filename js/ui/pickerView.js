@@ -59,8 +59,27 @@ window.SOM.pickerView = (function () {
     });
     container.appendChild(dirToggle);
 
+    /* Auto-advance toggle: a cell commits itself as soon as it holds as many
+       characters as its answer, so no Enter is needed. Persists like the
+       entry-mode choice. */
+    let autoOn = false;
+    try {
+      autoOn = window.localStorage.getItem("som-auto-advance") === "1";
+    } catch (e) { /* private mode: fall back to the default */ }
+    const autoToggle = el("button", "picker-direction picker-auto",
+      "auto-advance: " + (autoOn ? "on" : "off"));
+    autoToggle.setAttribute("aria-pressed", String(autoOn));
+    autoToggle.addEventListener("click", function () {
+      autoOn = !autoOn;
+      autoToggle.textContent = "auto-advance: " + (autoOn ? "on" : "off");
+      autoToggle.setAttribute("aria-pressed", String(autoOn));
+      try { window.localStorage.setItem("som-auto-advance", autoOn ? "1" : "0"); }
+      catch (e) { /* private mode: the choice just does not persist */ }
+    });
+    container.appendChild(autoToggle);
+
     function pickOpts() {
-      return { rtl: mode === "rtl", compute: mode === "compute" };
+      return { rtl: mode === "rtl", compute: mode === "compute", auto: autoOn };
     }
 
     /* Group entries by operator, keeping catalogue order inside each group. */
