@@ -71,6 +71,18 @@ check("display 106 complete", D("106", "610", 1), { text: "106", pos: null });
 check("display 36 after 6", D("36", "6", 1), { text: " 6", pos: 0 });
 check("display 36 complete", D("36", "63", 1), { text: "36", pos: null });
 
+/* A WRONG entry can be longer than the answer. Every typed digit then gets
+   its own slot — the row widens — so none is dropped from the display. */
+check("display over-long keeps every digit", D("45", "8901", 1), { text: "9018", pos: null });
+check("display over-long negative keeps every digit",
+  D("-45", "890123", 1, true), { text: "-901238", pos: null });
+
+/* The reported case: a 3-digit answer with singles 1. Typing 8, 9, 0 must
+   read "908" at every keystroke — the layout never flips to typed order. */
+check("display 8 then 9 then 0 (step 1)", D("879", "8", 1), { text: "  8", pos: 0 });
+check("display 8 then 9 then 0 (step 2)", D("879", "89", 1), { text: "9 8", pos: 1 });
+check("display 8 then 9 then 0 (complete)", D("879", "890", 1), { text: "908", pos: null });
+
 /* Single-digit answer: one slot, typed as-is. */
 check("display 5 empty", D("5", "", 1), { text: " ", pos: 0 });
 check("display 5 complete", D("5", "5", 1), { text: "5", pos: null });

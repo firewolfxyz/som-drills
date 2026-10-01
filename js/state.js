@@ -80,20 +80,15 @@ window.SOM.state = (function () {
       return;
     }
     const answer = String(spec.answers[index % rowCount][Math.floor(index / rowCount)]);
-    /* A full-length buffer shows exactly what was typed: the real answer
-       for a correct cell, the raw (wrong) entry otherwise. Only a PARTIAL
-       buffer gets laid out into digit slots with the cursor. */
-    const absDigits = String(Math.abs(Number(answer)));
-    /* Show exactly what was typed when: it IS the real answer, or it is a
-       full-length buffer that is NOT this cell's valid entry order (i.e. a
-       committed WRONG answer — never remap that). A partial buffer and the
-       valid complete entry buffer both get laid out into digit slots. */
-    if (t === answer ||
-        (t !== null && t.length === absDigits.length &&
-         t !== window.SOM.rules.computeEntry(absDigits, headLen))) {
+    /* A correct cell stores the REAL answer and shows it as-is. */
+    if (t !== null && t === answer) {
       view.showText(index, t);
       return;
     }
+    /* Everything else — a partial buffer, a committed wrong entry — keeps the
+       same positional layout: each typed digit holds the place it occupies in
+       the answer, so nothing jumps when the buffer fills up or commits. Only
+       the DISPLAY is laid out; the stored text stays the typed order. */
     const d = window.SOM.rules.computeDisplay(answer, t === null ? "" : t, headLen, negFlags[index]);
     const slots = [];
     for (let i = 0; i < d.text.length; i++) {
@@ -155,9 +150,13 @@ window.SOM.state = (function () {
   function onCommit() {
     /* An empty commit does nothing: it must never create a blank ahead. */
     if (currentText() === "") return true;
+    const previous = cursor;
     filledFlags[cursor] = true;
     filled += 1;
     updateHud();
+    /* Re-render the cell being left: its stored text changed (the real answer
+       on a correct entry) and its layout no longer carries a cursor. */
+    if (mode === "compute") renderCell(previous);
     const next = window.SOM.rules.advance(cursor, rowCount, colCount);
     if (next.done) {
       submit(); /* grid complete: grade everything and reveal */

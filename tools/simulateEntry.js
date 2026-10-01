@@ -309,9 +309,9 @@ cBox.SOM.state.handle("minus");
 check("compute: double minus toggles off",
   cCell(1).textContent.charAt(0) !== "-", true);
 
-/* Auto-advance in compute mode: a WRONG full-length buffer commits as typed
-   and advances (946 x 3 = 2838; typing 8178 must not strand the cursor).
-   Fresh 1x3 grid so the work-order index maps straight onto children. */
+/* Auto-advance in compute mode: a WRONG full-length buffer commits and
+   advances (946 x 3 = 2838; typing 8178 must not strand the cursor). The
+   display is positional all the way through: digits keep their slots. */
 const caGrid = makeNode("div");
 for (let c = 0; c < 3; c++) {
   const cell = makeNode("div");
@@ -322,6 +322,8 @@ for (let c = 0; c < 3; c++) {
 }
 cBox.SOM.entryView.setup(caGrid);
 const caCell = (i) => caGrid.children[i];
+const caNext = (cell) => cell.children.findIndex(
+  (c) => c._class.split(/\s+/).indexOf("slot-next") !== -1);
 cBox.SOM.state.start({
   operator: "multiply",
   rows: [946],
@@ -331,16 +333,56 @@ cBox.SOM.state.start({
   view: cBox.SOM.entryView,
   hud: { setProgress() {}, setTimeFraction() {} }
 }, { compute: true, auto: true });
-["8", "1", "7", "8"].forEach(function (d) { cBox.SOM.state.handle("digit", d); });
+const caDisplays = [];
+["8", "1", "7", "8"].forEach(function (d) {
+  cBox.SOM.state.handle("digit", d);
+  caDisplays.push(caCell(0).textContent);
+});
+check("compute auto: digits keep their slots while typing",
+  caDisplays, ["   8", "  18", "7 18", "7818"]);
 check("compute auto: wrong full-length buffer advances",
-  [caCell(0)._text, cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled],
-  ["8178", 1, 1]);
-check("compute auto: committed wrong cell shows exactly what was typed",
-  caCell(0).textContent, "8178");
+  [cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled], [1, 1]);
+check("compute auto: committed wrong cell keeps the layout it had while typing",
+  caCell(0).textContent, "7818");
 cBox.SOM.state.handle("back");
-check("compute auto: backspace reopens the wrong cell with its buffer",
-  [caCell(0)._text, cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled],
-  ["8178", 0, 0]);
+check("compute auto: backspace steps into the committed cell unchanged",
+  [caCell(0).textContent, cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled],
+  ["7818", 0, 0]);
+cBox.SOM.state.handle("back");
+check("compute auto: one more backspace deletes the last typed digit",
+  [caCell(0).textContent, caNext(caCell(0))], ["7 18", 1]);
+/* The reported sequence: a 3-digit answer, singles 1 — typing 8, 9, 0 must
+   read "908" and stay "908", not flip to the typed order "890". */
+cBox.SOM.state.start({
+  operator: "multiply",
+  rows: [29],
+  cols: [3, 4, 5],
+  answers: [["879"]]
+}, {
+  view: cBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { compute: true });
+const seen = [];
+["8", "9", "0"].forEach(function (d) {
+  cBox.SOM.state.handle("digit", d);
+  seen.push(caCell(0).textContent);
+});
+check("compute: no flip when the buffer fills (8,9,0 -> 908)", seen, ["  8", "9 8", "908"]);
+cBox.SOM.state.handle("commit");
+check("compute: committing keeps the same layout", caCell(0).textContent, "908");
+/* A wrong entry longer than the answer must show every digit it holds. */
+cBox.SOM.state.start({
+  operator: "multiply",
+  rows: [29],
+  cols: [3, 4, 5],
+  answers: [["45"]]
+}, {
+  view: cBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { compute: true });
+["8", "9", "0", "1"].forEach(function (d) { cBox.SOM.state.handle("digit", d); });
+check("compute: over-long entry keeps every digit",
+  [caCell(0).textContent.length, caCell(0).textContent.replace(/ /g, "")], [4, "9018"]);
 
 /* Auto-advance option: with auto on, a cell commits itself once it holds as
    many characters as its answer — no Enter needed. */

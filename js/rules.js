@@ -129,18 +129,25 @@ window.SOM.rules = (function () {
      computeDisplay("1690", "09", 2)        -> { text: "  90", pos: 0 }
      computeDisplay("1690", "091", 2)       -> { text: "1 90", pos: 1 }
      computeDisplay("1690", "0916", 2)      -> { text: "1690", pos: null }
-     computeDisplay("-1690", "09", 2, true) -> { text: "   90", pos: 1 } */
+     computeDisplay("-1690", "09", 2, true) -> { text: "   90", pos: 1 }
+
+     A WRONG entry can be longer than the answer (up to the entry cap). Every
+     typed digit then gets its own slot — the row grows to fit — so no digit
+     is ever silently dropped out of the display. */
   function computeDisplay(answer, buffer, singles, negative) {
     const s = String(Math.abs(Number(answer)));
-    const L = s.length;
     const k = buffer.length;
-    const chars = new Array(L).fill(" ");
+    /* The row is at least as wide as the answer; a longer buffer widens it. */
+    const width = Math.max(s.length, k);
+    const chars = new Array(width).fill(" ");
     const nSingles = Math.min(k, singles);
-    for (let i = 0; i < nSingles; i++) chars[L - 1 - i] = buffer[i];
+    /* The first `singles` typed digits sit at the right edge, whichever edge
+       that is; the rest fill the leading chunk from its left end. */
+    for (let i = 0; i < nSingles; i++) chars[width - 1 - i] = buffer[i];
     for (let i = nSingles; i < k; i++) chars[i - nSingles] = buffer[i];
     let pos;
-    if (k >= L) pos = null; /* complete */
-    else if (k < singles) pos = L - 1 - k;
+    if (k >= s.length) pos = null; /* complete */
+    else if (k < singles) pos = width - 1 - k;
     else pos = k - singles;
     if (negative) {
       chars.unshift("-");
