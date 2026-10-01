@@ -309,6 +309,39 @@ cBox.SOM.state.handle("minus");
 check("compute: double minus toggles off",
   cCell(1).textContent.charAt(0) !== "-", true);
 
+/* Auto-advance in compute mode: a WRONG full-length buffer commits as typed
+   and advances (946 x 3 = 2838; typing 8178 must not strand the cursor).
+   Fresh 1x3 grid so the work-order index maps straight onto children. */
+const caGrid = makeNode("div");
+for (let c = 0; c < 3; c++) {
+  const cell = makeNode("div");
+  cell.className = "cell answer";
+  cell.dataset.row = "0";
+  cell.dataset.col = String(c);
+  caGrid.appendChild(cell);
+}
+cBox.SOM.entryView.setup(caGrid);
+const caCell = (i) => caGrid.children[i];
+cBox.SOM.state.start({
+  operator: "multiply",
+  rows: [946],
+  cols: [3, 4, 5],
+  answers: [[2838, 3804, 4770]]
+}, {
+  view: cBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { compute: true, auto: true });
+["8", "1", "7", "8"].forEach(function (d) { cBox.SOM.state.handle("digit", d); });
+check("compute auto: wrong full-length buffer advances",
+  [caCell(0)._text, cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled],
+  ["8178", 1, 1]);
+check("compute auto: committed wrong cell shows exactly what was typed",
+  caCell(0).textContent, "8178");
+cBox.SOM.state.handle("back");
+check("compute auto: backspace reopens the wrong cell with its buffer",
+  [caCell(0)._text, cBox.SOM.state.info().cursor, cBox.SOM.state.info().filled],
+  ["8178", 0, 0]);
+
 /* Auto-advance option: with auto on, a cell commits itself once it holds as
    many characters as its answer — no Enter needed. */
 const aBox = { console: console, document: { createElement: makeNode } };
@@ -343,6 +376,13 @@ aBox.SOM.state.handle("digit", "3");
 check("auto: full-length cell commits itself and advances",
   [aCell(0)._text, aBox.SOM.state.info().cursor, aBox.SOM.state.info().filled],
   ["13", 1, 1]);
+/* A WRONG answer of the right length must advance too — auto-advance keys
+   off length only, never off correctness. Cell 1's answer is 14; type 99. */
+aBox.SOM.state.handle("digit", "9");
+aBox.SOM.state.handle("digit", "9");
+check("auto: a wrong full-length answer still advances",
+  [aCell(1)._text, aBox.SOM.state.info().cursor, aBox.SOM.state.info().filled],
+  ["99", 2, 2]);
 
 /* Minus in plain (non-compute) modes: toggles a "-" prefix in the text.
    Fresh plain session (auto off) so the cursor stays put. */

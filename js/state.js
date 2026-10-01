@@ -80,7 +80,20 @@ window.SOM.state = (function () {
       return;
     }
     const answer = String(spec.answers[index % rowCount][Math.floor(index / rowCount)]);
-    if (t === answer) { view.showText(index, answer); return; } /* complete */
+    /* A full-length buffer shows exactly what was typed: the real answer
+       for a correct cell, the raw (wrong) entry otherwise. Only a PARTIAL
+       buffer gets laid out into digit slots with the cursor. */
+    const absDigits = String(Math.abs(Number(answer)));
+    /* Show exactly what was typed when: it IS the real answer, or it is a
+       full-length buffer that is NOT this cell's valid entry order (i.e. a
+       committed WRONG answer — never remap that). A partial buffer and the
+       valid complete entry buffer both get laid out into digit slots. */
+    if (t === answer ||
+        (t !== null && t.length === absDigits.length &&
+         t !== window.SOM.rules.computeEntry(absDigits, headLen))) {
+      view.showText(index, t);
+      return;
+    }
     const d = window.SOM.rules.computeDisplay(answer, t === null ? "" : t, headLen, negFlags[index]);
     const slots = [];
     for (let i = 0; i < d.text.length; i++) {
@@ -113,6 +126,13 @@ window.SOM.state = (function () {
         typed[cursor] = negFlags[cursor] ? "-" + absAnswer : absAnswer;
         showCurrent();
         onCommit();
+      } else if (auto && buffer.length >= absAnswer.length) {
+        /* Auto-advance: a full-length WRONG buffer commits as typed and
+           advances — never stranded, and it reveals nothing about whether
+           the digits are right, only how long the answer is. */
+        typed[cursor] = buffer;
+        showCurrent();
+        onCommit();
       } else {
         typed[cursor] = buffer;
         showCurrent();
@@ -123,8 +143,12 @@ window.SOM.state = (function () {
        so the first digit typed sits rightmost in the cell. */
     typed[cursor] = mode === "rtl" ? char + currentText() : currentText() + char;
     showCurrent();
-    /* Auto-advance: a full-length cell commits itself, no Enter needed. */
-    if (auto && currentText().length === answerLength(cursor)) onCommit();
+    /* Auto-advance: a cell that holds at least as many characters as its
+       answer commits itself, no Enter needed. "At least" (not "exactly") so
+       a wrong-length entry still advances instead of stranding the cursor —
+       and it never reveals whether the digits are right, only how long the
+       answer is. */
+    if (auto && currentText().length >= answerLength(cursor)) onCommit();
     return true;
   }
 
