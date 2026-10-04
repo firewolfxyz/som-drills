@@ -135,8 +135,13 @@ window.SOM.state = (function () {
       return true;
     }
     /* Left-to-right: the digit appends. Right-to-left: it lands on the left,
-       so the first digit typed sits rightmost in the cell. */
-    typed[cursor] = mode === "rtl" ? char + currentText() : currentText() + char;
+       so the first digit typed sits rightmost in the cell. A "-" prefix
+       stays at the front: in rtl the digit slots in AFTER the sign, so the
+       sign never ends up mid-string. */
+    const t = currentText();
+    typed[cursor] = mode === "rtl"
+      ? (t.charAt(0) === "-" ? "-" + char + t.slice(1) : char + t)
+      : t + char;
     showCurrent();
     /* Auto-advance: a cell that holds at least as many characters as its
        answer commits itself, no Enter needed. "At least" (not "exactly") so
@@ -164,7 +169,9 @@ window.SOM.state = (function () {
     }
     cursor = next;
     view.highlight(cursor);
-    typed[cursor] = null; /* fresh cell starts empty */
+    /* A fresh cell is already null: a cell ahead of the cursor can never
+       hold text, because stepping back past a cell requires clearing it
+       first — so advancing never overwrites a saved entry. */
     showCurrent(); /* compute mode shows the entry cursor in a fresh cell */
     return true;
   }

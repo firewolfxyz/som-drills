@@ -63,6 +63,9 @@ function makeNode(tag) {
     set(v) { if (v === "") node.children = []; },
     get() { return node._text; }
   });
+  Object.defineProperty(node, "firstElementChild", {
+    get() { return node.children[0] || null; }
+  });
   Object.defineProperty(node, "classList", {
     get() {
       return {
@@ -136,7 +139,13 @@ function press(event) {
   let prevented = false;
   const evt = Object.assign({ preventDefault() { prevented = true; } }, event);
   handlers.keydown(evt);
-  if (prevented) acted += 1; else ignoredCodes.push(event.code || event.key);
+  /* "ignored" means keys.js maps the key to no action. Keys the session
+     refuses (picker screen, after submit) pass through un-prevented and
+     are NOT ignored. */
+  if (sandbox.SOM.keys.actionFor(event).action === "ignore") {
+    ignoredCodes.push(event.code || event.key);
+  }
+  if (prevented) acted += 1;
   return prevented;
 }
 const key = (ch) => press({ code: "Digit" + ch, key: ch });
@@ -172,6 +181,11 @@ check("picker has one header per operation",
 /* Keys on the picker screen are refused: no session has started. */
 key("5");
 check("digit on picker starts no session", state.info().started, false);
+/* Keyboard users must reach the picker buttons: keys the session refuses
+   (no session started) must NOT be preventDefaulted, so Enter/Space can
+   activate a focused button. */
+check("Enter on the picker passes through", press({ code: "Enter", key: "Enter" }), false);
+check("Space on the picker passes through", press({ code: "Space", key: " " }), false);
 
 /* Entry-mode toggle: cycles ltr -> rtl -> compute -> ltr, and persists the
    choice in localStorage. The rest of this harness runs a left-to-right
@@ -226,6 +240,19 @@ check("rtl digits: typing 1,2,3 stores 321 in the cell",
   rtlGrid.children[0]._text, "321");
 rtlBox.SOM.state.handle("back");
 check("rtl digits: backspace removes the rightmost digit", rtlGrid.children[0]._text, "32");
+/* rtl + minus: the "-" prefix stays at the front; digits slot in after it,
+   so the sign never ends up mid-string ("85-" would grade against "-58").
+   Fresh session so the cell starts empty. */
+rtlBox.SOM.state.start({ rows: [1, 2], cols: [3, 4, 5] }, {
+  view: rtlBox.SOM.entryView,
+  hud: { setProgress() {}, setTimeFraction() {} }
+}, { rtl: true });
+rtlBox.SOM.state.handle("minus");
+check("rtl minus: sign stays at the front", rtlGrid.children[0]._text, "-");
+rtlBox.SOM.state.handle("digit", "5");
+check("rtl minus: digit slots in after the sign", rtlGrid.children[0]._text, "-5");
+rtlBox.SOM.state.handle("digit", "8");
+check("rtl minus: sign never ends up mid-string", rtlGrid.children[0]._text, "-85");
 
 /* Compute entry: digits are typed in mental-math order (right to left, final
    carry chunk last), displayed at their FINAL positions with a cursor marking
@@ -491,6 +518,11 @@ const clock = sandbox.SOM.clock;
 check("no clock element in the HUD", clockText(), null);
 clock.tick(); /* the shim has no setInterval; tick() stands in for one second */
 check("timer counts down internally", clock.secondsLeft(), 299);
+/* The time bar fill must shrink with the clock: drillView.render returns
+   timeBar and main.js wires it into drillHud.setTimeFraction. */
+const barFill = appRoot.querySelector(".time-bar").children[0];
+const barWidth = parseFloat(barFill.style.width);
+check("time bar fill shrinks on tick", barWidth < 100 && barWidth > 99, true);
 
 console.log("\n-- type 19 then commit twice --");
 ["1", "9"].forEach(key);
@@ -588,6 +620,7 @@ commit();
 backspace();
 check("keys after expiry fill nothing", state.info().filled, 40);
 check("handle refuses after expiry", state.handle("digit", "1"), false);
+check("Enter after submit passes through", press({ code: "Enter", key: "Enter" }), false);
 
 console.log("\n-- timer unit checks (injectable, no waiting) --");
 const ticks = [];
@@ -655,11 +688,24 @@ check("no blanks before cursor", texts().slice(0, 2), ["12", "4"]);
 const ahead = texts().slice(2).filter((t) => t !== "").length;
 check("cells beyond cursor untouched", ahead, 0);
 
+console.log("\n-- keypad minus key --");
+const kpBox = { console: console, document: { createElement: makeNode } };
+kpBox.window = kpBox;
+vm.createContext(kpBox);
+vm.runInContext(fs.readFileSync(path.join(root, "js/ui/keypadView.js"), "utf8"), kpBox, { filename: "js/ui/keypadView.js" });
+const kpEl = makeNode("div");
+const taps = [];
+kpBox.SOM.keypadView.render(kpEl, function (action, char) { taps.push([action, char]); });
+const minusKey = kpEl.querySelectorAll("button").find((b) => b._text === "-");
+check("keypad renders a minus key", !!minusKey, true);
+minusKey._listeners.pointerdown[0]({ preventDefault() {} });
+check("keypad minus fires the minus action", taps, [["minus", null]]);
+
 console.log("\n-- ignored keys --");
 press({ code: "KeyA", key: "a" });
 press({ code: "Tab", key: "Tab" });
 press({ code: "ArrowDown", key: "ArrowDown" });
-check("ignored keys list", ignoredCodes.filter((c) => c !== "Space"), ["KeyA", "Tab", "ArrowDown"]);
+check("ignored keys list", ignoredCodes, ["KeyA", "Tab", "ArrowDown"]);
 
 console.log("\n-- totals --");
 console.log("key events processed: " + keyEvents);

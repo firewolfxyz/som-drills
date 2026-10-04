@@ -104,9 +104,11 @@ window.SOM = window.SOM || {};
   document.addEventListener("keydown", function (event) {
     const mapped = window.SOM.keys.actionFor(event);
     if (mapped.action === "ignore") return;
-    /* Acted-on keys must not reach the browser: Space must not scroll and
-       Backspace must not navigate back in history. */
-    event.preventDefault();
-    window.SOM.state.handle(mapped.action, mapped.char);
+    /* Only keys the session acts on are swallowed: Space must not scroll and
+       Backspace must not navigate back. Keys the session refuses (picker
+       screen, after submit) pass through, so Enter/Space can activate a
+       focused picker button and the result-screen link. */
+    const acted = window.SOM.state.handle(mapped.action, mapped.char);
+    if (acted) event.preventDefault();
   });
 })();

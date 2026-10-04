@@ -1,5 +1,6 @@
 /* UI only: an on-screen keypad for touch devices (docs/phases.md Phase 5).
-   Renders big touch targets — digits 0-9, backspace, commit — and reports
+   Renders big touch targets — digits 0-9, backspace, minus, commit — and
+   reports
    taps as the same actions the keyboard maps to (js/keys.js). It decides
    nothing about work order or correctness; main.js forwards each tap to
    state.handle exactly like a mapped key event.
@@ -28,6 +29,7 @@ window.SOM.keypadView = (function () {
     }
     pad.appendChild(makeKey("\u232B", "back")); /* backspace glyph */
     pad.appendChild(makeKey("0", "digit"));
+    pad.appendChild(makeKey("-", "minus")); /* signed drills need the sign key */
     pad.appendChild(makeKey("ok", "commit"));
 
     container.appendChild(pad);

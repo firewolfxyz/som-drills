@@ -78,7 +78,7 @@ window.SOM.drillView = (function () {
     });
 
     container.appendChild(grid);
-    return { grid: grid, progress: hudEls.progress, clock: hudEls.clock };
+    return { grid: grid, progress: hudEls.progress, timeBar: hudEls.timeBar };
   }
 
   return { render: render };
