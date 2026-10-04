@@ -7,6 +7,9 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   margin: 0 0 1rem;
+  /* The heading is written in normal case ("Spirit of Math Drills", matching
+     the document title and PLAN.md); the all-caps brand look is CSS. */
+  text-transform: uppercase;
 }
 
 .picker-title {

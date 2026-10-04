@@ -609,10 +609,16 @@ check("after full: last cell text unchanged", texts()[39], lastBefore);
 check("after full: highlight unchanged", activeIndex(), activeBefore);
 
 console.log("\n-- time-up after completion is a no-op (idempotent submit) --");
-/* Tick the wired clock to zero; onExpire calls state.stop() again, which must
-   not re-grade or re-render. No real waiting (no setInterval here). */
+/* Completing the grid stops the countdown (docs/bugs.md bug 3), so no tick can
+   touch the time bar the result screen has already replaced. The late-expiry
+   path is still covered: restart the same clock and run it to zero, where
+   onExpire calls state.stop() again — which must not re-grade or re-render.
+   Bounded loop: a clock that stops decrementing must fail a check, not hang. */
+check("completing the grid stopped the countdown", clock.isRunning(), false);
 const resultBeforeExpiry = JSON.stringify(completedResult);
-while (clock.secondsLeft() > 0) clock.tick();
+clock.start();
+let tickGuard = 0;
+while (clock.secondsLeft() > 0 && clock.isRunning() && tickGuard++ < 1000) clock.tick();
 check("timer stopped itself", clock.isRunning(), false);
 check("result unchanged after expiry", JSON.stringify(state.info().result), resultBeforeExpiry);
 key("9");

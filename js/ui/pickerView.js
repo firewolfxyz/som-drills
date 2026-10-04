@@ -21,33 +21,50 @@ window.SOM.pickerView = (function () {
     divide: "Division"
   };
 
+  /* Entry modes, and the two choices that persist in localStorage:
+        ltr     - type digits left to right (default).
+        rtl     - type them right to left: the first digit lands rightmost.
+        compute - mental-math order: type the answer from the right, final
+                  carry chunk last (338 x 5 -> 0916). Division drills ignore
+                  it and stay left-to-right. */
+  const MODES = ["ltr", "rtl", "compute"];
+  const MODE_LABELS = {
+    ltr: "digits: left \u2192 right",
+    rtl: "digits: right \u2192 left",
+    compute: "compute order"
+  };
+
+  function readMode() {
+    try {
+      const saved = window.localStorage.getItem("som-entry-mode");
+      return MODES.indexOf(saved) === -1 ? "ltr" : saved;
+    } catch (e) { return "ltr"; /* private mode: the default */ }
+  }
+
+  function readAuto() {
+    try { return window.localStorage.getItem("som-auto-advance") === "1"; }
+    catch (e) { return false; }
+  }
+
+  /* The persisted choices as the options object onPick hands to main.js.
+     Exported so a #drill= fragment start enters the drill the same way the
+     picker would: the fragment is a shortcut into that session, not a
+     different set of rules (docs/phases.md). */
+  function savedOptions() {
+    const mode = readMode();
+    return { rtl: mode === "rtl", compute: mode === "compute", auto: readAuto() };
+  }
+
   /* Renders the list into container, grouped under one header per
      operation. onPick(index, opts) fires when an item is clicked; opts.rtl is
      true when right-to-left entry is toggled on. Each item also carries
      data-index for tools/ checks. */
   function render(container, entries, onPick) {
     container.innerHTML = "";
-    container.appendChild(el("h1", "app-title", "SPIRIT OF MATH DRILLER"));
+    container.appendChild(el("h1", "app-title", "Spirit of Math Drills"));
     container.appendChild(el("h2", "picker-title", "choose a drill"));
 
-    /* Entry-mode toggle, cycling three modes:
-        ltr     - type digits left to right (default).
-        rtl     - type them right to left: the first digit lands rightmost.
-        compute - mental-math order: type the answer from the right, final
-                  carry chunk last (338 x 5 -> 0916). Division drills ignore
-                  it and stay left-to-right. The choice persists in
-                  localStorage so it sticks between sessions. */
-    const MODES = ["ltr", "rtl", "compute"];
-    const MODE_LABELS = {
-      ltr: "digits: left \u2192 right",
-      rtl: "digits: right \u2192 left",
-      compute: "compute order"
-    };
-    let mode = "ltr";
-    try {
-      const saved = window.localStorage.getItem("som-entry-mode");
-      if (MODES.indexOf(saved) !== -1) mode = saved;
-    } catch (e) { /* private mode: fall back to the default */ }
+    let mode = readMode();
     const dirToggle = el("button", "picker-direction", MODE_LABELS[mode]);
     dirToggle.setAttribute("aria-pressed", String(mode !== "ltr"));
     dirToggle.addEventListener("click", function () {
@@ -62,10 +79,7 @@ window.SOM.pickerView = (function () {
     /* Auto-advance toggle: a cell commits itself as soon as it holds as many
        characters as its answer, so no Enter is needed. Persists like the
        entry-mode choice. */
-    let autoOn = false;
-    try {
-      autoOn = window.localStorage.getItem("som-auto-advance") === "1";
-    } catch (e) { /* private mode: fall back to the default */ }
+    let autoOn = readAuto();
     const autoToggle = el("button", "picker-direction picker-auto",
       "auto-advance: " + (autoOn ? "on" : "off"));
     autoToggle.setAttribute("aria-pressed", String(autoOn));
@@ -132,5 +146,5 @@ window.SOM.pickerView = (function () {
     container.appendChild(surprise);
   }
 
-  return { render: render };
+  return { render: render, savedOptions: savedOptions };
 })();

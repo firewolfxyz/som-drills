@@ -30,7 +30,9 @@
     } catch (err) {
       decoded = raw;
     }
-    const match = /seed=(-?\d+)(?:$|[&\s])/.exec(decoded.replace(/^#/, ""));
+    /* Fragments stack params with "#" ("#seed=123#drill=2") as well as "&"
+       and whitespace, so all three end a value. */
+    const match = /seed=(-?\d+)(?:$|[&#\s])/.exec(decoded.replace(/^#/, ""));
     return match === null ? null : Number(match[1]);
   }
 

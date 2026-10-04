@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- Required for the phone layout: without it mobile browsers lay the page
+       out in a ~980px virtual viewport, so the max-width: 40rem rules in
+       css/keypad.css (grid shrink for viewports >= 320px, docs/phases.md
+       Phase 5) never match. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spirit of Math Drills</title>
   <!-- Scripts are loaded as classic scripts in dependency order, not ES modules:
        browsers block module loading over file:// and this app must run by

@@ -1,0 +1,8 @@
+{
+  "name": "som-driller",
+  "private": true,
+  "description": "Spirit of Math Drills: a static drill grid. No runtime dependencies - the app is classic scripts loaded by index.html, and the tests are plain node scripts (see .github/workflows/pages.yml).",
+  "scripts": {
+    "test": "node tools/testBugs.js && node tools/testComputeEntry.js && node tools/testConfig.js && node tools/testGenerate.js && node tools/testGrade.js && node tools/testHistory.js && node tools/testSeed.js && node tools/testSummarize.js && node tools/testWalk.js && node tools/simulateEntry.js"
+  }
+}

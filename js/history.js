@@ -15,12 +15,15 @@ window.SOM = window.SOM || {};
 window.SOM.history = (function () {
   const STORAGE_KEY = "som-history";
 
-  /* Storage access with fallback: one probe at load, then a stable backend. */
+  /* Storage access with fallback: one probe at load, then a stable backend.
+     The probe READS: a page view that records no run must not create a
+     storage entry, and reads plus JSON.parse are exactly what readAll does
+     later. A storage that only fails on write is caught by writeAll. */
   let memory = null; /* in-memory map used when localStorage is unusable */
   function storageUsable() {
     try {
-      const s = window.localStorage;
-      s.setItem(STORAGE_KEY, s.getItem(STORAGE_KEY) || "{}");
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw !== null && raw !== "") JSON.parse(raw);
       return true;
     } catch (e) {
       memory = {};

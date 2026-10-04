@@ -45,6 +45,10 @@ window.SOM = window.SOM || {};
          thing: hide it once the result is up. */
       result: {
         show: function (result) {
+          /* The run is over: stop the countdown before revealing anything, so
+             no tick touches the time bar the result screen has just replaced
+             and the expiry handler cannot fire behind it. */
+          window.SOM.clock.stop();
           /* Persist the run before revealing it; a new best earns a badge. */
           const stored = window.SOM.history.record(
             result.spec.name,
@@ -93,10 +97,12 @@ window.SOM = window.SOM || {};
     });
   }
 
-  /* The picker is the first screen; a #drill= fragment skips it. */
+  /* The picker is the first screen; a #drill= fragment skips it — but the
+     entry-mode and auto-advance choices still come from the picker's saved
+     settings, so a fragment link starts the same kind of session. */
   const drillIndex = parseFragmentParam("drill");
   if (drillIndex !== null && window.SOM.config.entries[drillIndex] !== undefined) {
-    startDrill(drillIndex);
+    startDrill(drillIndex, window.SOM.pickerView.savedOptions());
   } else {
     window.SOM.pickerView.render(app, window.SOM.config.entries, startDrill);
   }

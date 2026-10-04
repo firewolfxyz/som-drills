@@ -101,10 +101,44 @@ window.SOM.state = (function () {
     renderCell(cursor);
   }
 
-  /* Length of this cell's expected answer, including a sign for negative
-     answers. Only read for the auto-advance option — never for grading. */
+  /* This cell's expected answer as text: a number for + - x, a string like
+     "3r2" for division. Only read for auto-advance, the r separator and
+     compute-order normalisation — never for grading (rules.js does that). */
+  function answerText(index) {
+    return String(spec.answers[index % rowCount][Math.floor(index / rowCount)]);
+  }
+
   function answerLength(index) {
-    return String(spec.answers[index % rowCount][Math.floor(index / rowCount)]).length;
+    return answerText(index).length;
+  }
+
+  /* Append one character to the cell: left-to-right it lands at the end,
+     right-to-left on the left, so the first character typed sits rightmost.
+     A "-" prefix stays at the front: in rtl the character slots in AFTER the
+     sign, so the sign never ends up mid-string. */
+  function appendChar(char) {
+    if (currentText().length >= MAX_CHARS) return true;
+    const t = currentText();
+    typed[cursor] = mode === "rtl"
+      ? (t.charAt(0) === "-" ? "-" + char + t.slice(1) : char + t)
+      : t + char;
+    showCurrent();
+    /* Auto-advance: a cell that holds at least as many characters as its
+       answer commits itself, no Enter needed. "At least" (not "exactly") so
+       a wrong-length entry still advances instead of stranding the cursor —
+       and it never reveals whether the digits are right, only how long the
+       answer is. */
+    if (auto && currentText().length >= answerLength(cursor)) onCommit();
+    return true;
+  }
+
+  /* The quotient+remainder separator of division answers ("3r2"): a character
+     of the answer, entered like a digit. It is refused in a cell whose answer
+     holds no "r", so a stray r in an addition drill types nothing. */
+  function onSeparator() {
+    if (mode === "compute") return false; /* division never enters as compute */
+    if (answerText(cursor).indexOf("r") === -1) return false;
+    return appendChar("r"); /* always the separator itself, whatever the caller sent */
   }
 
   function onDigit(char) {
@@ -115,8 +149,7 @@ window.SOM.state = (function () {
          this cell's computed entry string the REAL answer is stored and the
          cell advances automatically (no Enter needed). */
       const buffer = currentText() + char;
-      const rawAnswer = String(spec.answers[cursor % rowCount][Math.floor(cursor / rowCount)]);
-      const absAnswer = String(Math.abs(Number(rawAnswer)));
+      const absAnswer = String(Math.abs(Number(answerText(cursor))));
       if (buffer === window.SOM.rules.computeEntry(absAnswer, headLen)) {
         typed[cursor] = negFlags[cursor] ? "-" + absAnswer : absAnswer;
         showCurrent();
@@ -134,27 +167,29 @@ window.SOM.state = (function () {
       }
       return true;
     }
-    /* Left-to-right: the digit appends. Right-to-left: it lands on the left,
-       so the first digit typed sits rightmost in the cell. A "-" prefix
-       stays at the front: in rtl the digit slots in AFTER the sign, so the
-       sign never ends up mid-string. */
-    const t = currentText();
-    typed[cursor] = mode === "rtl"
-      ? (t.charAt(0) === "-" ? "-" + char + t.slice(1) : char + t)
-      : t + char;
-    showCurrent();
-    /* Auto-advance: a cell that holds at least as many characters as its
-       answer commits itself, no Enter needed. "At least" (not "exactly") so
-       a wrong-length entry still advances instead of stranding the cursor —
-       and it never reveals whether the digits are right, only how long the
-       answer is. */
-    if (auto && currentText().length >= answerLength(cursor)) onCommit();
-    return true;
+    /* Left-to-right: the digit appends. Right-to-left: it lands on the left.
+       Same rule as the "r" separator, so both go through appendChar. */
+    return appendChar(char);
+  }
+
+  /* Compute mode stores the REAL answer in a completed cell, but reopening it
+     (backspace) restores the TYPED buffer so it can be edited. Committing that
+     buffer unchanged must store the answer again — otherwise stepping back into
+     a correct cell and pressing Enter would grade it wrong. */
+  function normaliseBuffer(index) {
+    const answer = answerText(index);
+    const t = typed[index];
+    if (t === null || t === answer) return;
+    const abs = String(Math.abs(Number(answer)));
+    if (t === window.SOM.rules.computeEntry(abs, headLen)) {
+      typed[index] = negFlags[index] ? "-" + abs : abs;
+    }
   }
 
   function onCommit() {
     /* An empty commit does nothing: it must never create a blank ahead. */
     if (currentText() === "") return true;
+    if (mode === "compute") normaliseBuffer(cursor);
     const previous = cursor;
     filledFlags[cursor] = true;
     filled += 1;
@@ -247,6 +282,7 @@ window.SOM.state = (function () {
   function handle(action, char) {
     if (!started || done) return false;
     if (action === "digit") return onDigit(char);
+    if (action === "sep") return onSeparator();
     if (action === "commit") return onCommit();
     if (action === "back") return onBack();
     if (action === "minus") {

@@ -1,11 +1,10 @@
 /* UI only: an on-screen keypad for touch devices (docs/phases.md Phase 5).
-   Renders big touch targets — digits 0-9, backspace, minus, commit — and
-   reports
-   taps as the same actions the keyboard maps to (js/keys.js). It decides
-   nothing about work order or correctness; main.js forwards each tap to
-   state.handle exactly like a mapped key event.
+   Renders big touch targets: digits 0-9, backspace, minus, the r separator
+   and commit, and reports taps as the same actions the keyboard maps to
+   (js/keys.js). It decides nothing about work order or correctness;
+   main.js forwards each tap to state.handle exactly like a mapped key event.
 
-   The keypad lives OUTSIDE #app so view re-rendals (drill -> result) do not
+   The keypad lives OUTSIDE #app so view re-renders (drill -> result) do not
    destroy it; show/hide is driven by the session's lifecycle in main.js. */
 
 window.SOM = window.SOM || {};
@@ -30,6 +29,9 @@ window.SOM.keypadView = (function () {
     pad.appendChild(makeKey("\u232B", "back")); /* backspace glyph */
     pad.appendChild(makeKey("0", "digit"));
     pad.appendChild(makeKey("-", "minus")); /* signed drills need the sign key */
+    /* Quotient+remainder separator for division answers ("3r2"); state.js
+       ignores it in drills whose answers have no remainder. */
+    pad.appendChild(makeKey("r", "sep"));
     pad.appendChild(makeKey("ok", "commit"));
 
     container.appendChild(pad);
@@ -42,7 +44,7 @@ window.SOM.keypadView = (function () {
          mobile browsers add. */
       key.addEventListener("pointerdown", function (event) {
         event.preventDefault();
-        const char = action === "digit" ? label : null;
+        const char = (action === "digit" || action === "sep") ? label : null;
         onAction(action, char);
       });
       return key;
